@@ -1,20 +1,27 @@
 package com.example.currency.service;
 
+import com.example.currency.entity.User;
+import com.example.currency.repository.UserRepository;
+import com.example.currency.dto.CreateUserRequest;
 
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.example.currency.repository.userRepository;
-import com.example.currency.model.user;
+@Service
+public class UserService {
+    private final UserRepository userRepository;
 
-@Service 
-public class userService {
-  
-     
-    private userRepository repo;
-    
-    public List<user> getUsers(){
-        return repo.getUsers();
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
+    public User createUser(CreateUserRequest request){
+        User user = new User(request.getName(), request.getEmail());
+        return userRepository.save(user);
+    }
+
+     public List<User> getallUser(){
+        return userRepository.findAll();
     }
 }
