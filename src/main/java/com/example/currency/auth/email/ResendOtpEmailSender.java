@@ -43,9 +43,7 @@ public class ResendOtpEmailSender implements OtpEmailSender {
 	@Override
 	public void sendOtp(String email, String otp) {
 		Map<String, Object> body = new LinkedHashMap<>();
-		if (resendProperties.getFrom() != null && !resendProperties.getFrom().isBlank()) {
-			body.put("from", resendProperties.getFrom());
-		}
+		body.put("from", resendProperties.getFrom());
 		body.put("to", List.of(email));
 		body.put("template", Map.of(
 				"id", ResendEmailConstants.OTP_TEMPLATE_ID,

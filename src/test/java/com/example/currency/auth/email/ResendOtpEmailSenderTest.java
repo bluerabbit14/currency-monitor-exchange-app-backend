@@ -24,17 +24,17 @@ import static org.springframework.http.HttpMethod.POST;
 class ResendOtpEmailSenderTest {
 
 	@Test
-	void sendsPublishedTemplateWithoutFromWhenUnset() {
-		ResendProperties properties = resendProperties("");
-		OtpProperties otpProperties = otpProperties();
+	void sendsPublishedTemplateWithFrom() {
+		ResendProperties properties = resendProperties("Currency <otp@example.com>");
 		RestClient.Builder builder = RestClient.builder();
 		MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
-		ResendOtpEmailSender sender = new ResendOtpEmailSender(builder, properties, otpProperties);
+		ResendOtpEmailSender sender = new ResendOtpEmailSender(builder, properties, otpProperties());
 		server.expect(requestTo("https://api.resend.com/emails"))
 				.andExpect(method(POST))
 				.andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer re_test_key"))
 				.andExpect(content().json("""
 						{
+						  "from": "Currency <otp@example.com>",
 						  "to": ["user@gmail.com"],
 						  "template": {
 						    "id": "send-otp",
@@ -83,7 +83,8 @@ class ResendOtpEmailSenderTest {
 	void deliveryFailureDoesNotExposeTheProviderResponse() {
 		RestClient.Builder builder = RestClient.builder();
 		MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
-		ResendOtpEmailSender sender = new ResendOtpEmailSender(builder, resendProperties(""), otpProperties());
+		ResendOtpEmailSender sender = new ResendOtpEmailSender(
+				builder, resendProperties("Currency <otp@example.com>"), otpProperties());
 		server.expect(requestTo("https://api.resend.com/emails"))
 				.andRespond(withStatus(HttpStatus.BAD_GATEWAY).body("otp=123456"));
 
