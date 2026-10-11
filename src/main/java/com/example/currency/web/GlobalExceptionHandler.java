@@ -1,5 +1,10 @@
 package com.example.currency.web;
 
+import com.example.currency.auth.exception.EmailDeliveryException;
+import com.example.currency.auth.exception.InvalidContactException;
+import com.example.currency.auth.exception.InvalidRefreshTokenException;
+import com.example.currency.auth.exception.OtpVerificationFailedException;
+import com.example.currency.auth.exception.PhoneOtpNotSupportedException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpHeaders;
@@ -66,6 +71,31 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		return handleExceptionInternal(ex, problem, headers, status, request);
 	}
 
+	@ExceptionHandler(InvalidContactException.class)
+	ResponseEntity<Object> handleInvalidContact(InvalidContactException ex, WebRequest request) {
+		return problem(ex, HttpStatus.BAD_REQUEST, "Bad Request", request);
+	}
+
+	@ExceptionHandler(OtpVerificationFailedException.class)
+	ResponseEntity<Object> handleOtpVerificationFailed(OtpVerificationFailedException ex, WebRequest request) {
+		return problem(ex, HttpStatus.UNAUTHORIZED, "Unauthorized", request);
+	}
+
+	@ExceptionHandler(InvalidRefreshTokenException.class)
+	ResponseEntity<Object> handleInvalidRefreshToken(InvalidRefreshTokenException ex, WebRequest request) {
+		return problem(ex, HttpStatus.UNAUTHORIZED, "Unauthorized", request);
+	}
+
+	@ExceptionHandler(PhoneOtpNotSupportedException.class)
+	ResponseEntity<Object> handlePhoneOtpNotSupported(PhoneOtpNotSupportedException ex, WebRequest request) {
+		return problem(ex, HttpStatus.NOT_IMPLEMENTED, "Not Implemented", request);
+	}
+
+	@ExceptionHandler(EmailDeliveryException.class)
+	ResponseEntity<Object> handleEmailDelivery(EmailDeliveryException ex, WebRequest request) {
+		return problem(ex, HttpStatus.SERVICE_UNAVAILABLE, "Service Unavailable", request);
+	}
+
 	@ExceptionHandler(ConstraintViolationException.class)
 	ResponseEntity<Object> handleConstraintViolation(ConstraintViolationException ex, WebRequest request) {
 		List<FieldViolation> errors = ex.getConstraintViolations().stream()
@@ -93,6 +123,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 				"Unexpected error");
 		problem.setTitle("Internal Server Error");
 		return handleExceptionInternal(ex, problem, new HttpHeaders(), HttpStatus.INTERNAL_SERVER_ERROR, request);
+	}
+
+	private ResponseEntity<Object> problem(RuntimeException ex, HttpStatus status, String title, WebRequest request) {
+		ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, ex.getMessage());
+		problem.setTitle(title);
+		return handleExceptionInternal(ex, problem, new HttpHeaders(), status, request);
 	}
 
 	private static ProblemDetail validationProblem(HttpStatusCode status, List<FieldViolation> errors) {
