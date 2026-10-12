@@ -3,6 +3,7 @@ package com.example.currency.auth.service;
 import com.example.currency.auth.config.JwtProperties;
 import com.example.currency.auth.dto.AuthTokenResponse;
 import com.example.currency.auth.entity.RefreshSession;
+import com.example.currency.auth.exception.InvalidAccessTokenException;
 import com.example.currency.auth.exception.InvalidRefreshTokenException;
 import com.example.currency.auth.repository.RefreshSessionRepository;
 import com.example.currency.user.entity.User;
@@ -91,6 +92,45 @@ class TokenServiceTest {
 	@Test
 	void rejectsUnknownRefreshToken() {
 		assertThrows(InvalidRefreshTokenException.class, () -> tokenService.refresh("missing"));
+	}
+
+	@Test
+	void requireUserIdReturnsTheSubject() {
+		User user = activeUser();
+		AuthTokenResponse issued = tokenService.issue(user);
+
+		assertEquals(user.getId(), tokenService.requireUserId("Bearer " + issued.accessToken()));
+	}
+
+	@Test
+	void requireUserIdRejectsATamperedSignature() {
+		AuthTokenResponse issued = tokenService.issue(activeUser());
+		String token = issued.accessToken();
+		char last = token.charAt(token.length() - 1);
+		String tampered = token.substring(0, token.length() - 1) + (last == 'a' ? 'b' : 'a');
+
+		assertThrows(InvalidAccessTokenException.class, () -> tokenService.requireUserId("Bearer " + tampered));
+	}
+
+	@Test
+	void requireUserIdRejectsAnExpiredToken() {
+		JwtProperties properties = new JwtProperties();
+		properties.setSecret("test-jwt-secret");
+		properties.setAccessTtlSeconds(-1);
+		properties.setRefreshTtlSeconds(2_592_000);
+		TokenService expiredTokens = new TokenService(refreshSessionRepository, properties);
+		AuthTokenResponse issued = expiredTokens.issue(activeUser());
+
+		assertThrows(InvalidAccessTokenException.class,
+				() -> expiredTokens.requireUserId("Bearer " + issued.accessToken()));
+	}
+
+	@Test
+	void requireUserIdRejectsAMissingBearerPrefix() {
+		AuthTokenResponse issued = tokenService.issue(activeUser());
+
+		assertThrows(InvalidAccessTokenException.class, () -> tokenService.requireUserId(issued.accessToken()));
+		assertThrows(InvalidAccessTokenException.class, () -> tokenService.requireUserId(null));
 	}
 
 	private static User activeUser() {

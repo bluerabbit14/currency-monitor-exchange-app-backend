@@ -25,7 +25,10 @@ import java.util.UUID;
 @Entity
 @Table(
 		name = "user_devices",
-		indexes = @Index(name = "user_devices_user_id_idx", columnList = "user_id")
+		indexes = {
+				@Index(name = "user_devices_user_id_idx", columnList = "user_id"),
+				@Index(name = "user_devices_user_id_active_idx", columnList = "user_id, is_active")
+		}
 )
 public class UserDevice extends AuditableEntity {
 
@@ -51,6 +54,9 @@ public class UserDevice extends AuditableEntity {
 
 	@Column(name = "app_version", length = 32)
 	private String appVersion;
+
+	@Column(name = "is_active", nullable = false)
+	private boolean active = true;
 
 	@Column(name = "last_seen_at")
 	private Instant lastSeenAt;
@@ -97,6 +103,14 @@ public class UserDevice extends AuditableEntity {
 
 	public void setAppVersion(String appVersion) {
 		this.appVersion = appVersion;
+	}
+
+	public boolean isActive() {
+		return active;
+	}
+
+	public void setActive(boolean active) {
+		this.active = active;
 	}
 
 	public Instant getLastSeenAt() {

@@ -1,12 +1,25 @@
 package com.example.currency.web;
 
+import com.example.currency.alert.exception.AlertNotFoundException;
+import com.example.currency.notification.exception.EmptyNotificationPreferenceUpdateException;
+import com.example.currency.notification.exception.NotificationNotFoundException;
+import com.example.currency.asset.enums.AssetType;
+import com.example.currency.asset.exception.AssetNotFoundException;
 import com.example.currency.auth.exception.EmailDeliveryException;
+import com.example.currency.device.exception.DeviceNotFoundException;
+import com.example.currency.auth.exception.InvalidAccessTokenException;
 import com.example.currency.auth.exception.InvalidContactException;
 import com.example.currency.auth.exception.InvalidRefreshTokenException;
 import com.example.currency.auth.exception.OtpVerificationFailedException;
 import com.example.currency.auth.exception.PhoneOtpNotSupportedException;
+import com.example.currency.rate.exception.InvalidRateHistoryRangeException;
+import com.example.currency.rate.exception.InvalidRateObservationException;
+import com.example.currency.rate.exception.RateNotAvailableException;
+import com.example.currency.rate.exception.UnsupportedPairException;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -19,10 +32,13 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
@@ -61,6 +77,20 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	}
 
 	@Override
+	protected ResponseEntity<Object> handleTypeMismatch(
+			TypeMismatchException ex,
+			HttpHeaders headers,
+			HttpStatusCode status,
+			WebRequest request) {
+		String name = ex instanceof MethodArgumentTypeMismatchException mismatch
+				? mismatch.getName()
+				: ex.getPropertyName();
+		ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, typeMismatchDetail(name, ex.getRequiredType()));
+		problem.setTitle("Bad Request");
+		return handleExceptionInternal(ex, problem, headers, status, request);
+	}
+
+	@Override
 	protected ResponseEntity<Object> handleHttpMessageNotReadable(
 			HttpMessageNotReadableException ex,
 			HttpHeaders headers,
@@ -69,6 +99,66 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, "Request body is malformed");
 		problem.setTitle("Bad Request");
 		return handleExceptionInternal(ex, problem, headers, status, request);
+	}
+
+	@ExceptionHandler(AssetNotFoundException.class)
+	ResponseEntity<Object> handleAssetNotFound(AssetNotFoundException ex, WebRequest request) {
+		return problem(ex, HttpStatus.NOT_FOUND, "Not Found", request);
+	}
+
+	@ExceptionHandler(DeviceNotFoundException.class)
+	ResponseEntity<Object> handleDeviceNotFound(DeviceNotFoundException ex, WebRequest request) {
+		return problem(ex, HttpStatus.NOT_FOUND, "Not Found", request);
+	}
+
+	@ExceptionHandler(AlertNotFoundException.class)
+	ResponseEntity<Object> handleAlertNotFound(AlertNotFoundException ex, WebRequest request) {
+		return problem(ex, HttpStatus.NOT_FOUND, "Not Found", request);
+	}
+
+	@ExceptionHandler(NotificationNotFoundException.class)
+	ResponseEntity<Object> handleNotificationNotFound(NotificationNotFoundException ex, WebRequest request) {
+		return problem(ex, HttpStatus.NOT_FOUND, "Not Found", request);
+	}
+
+	@ExceptionHandler(EmptyNotificationPreferenceUpdateException.class)
+	ResponseEntity<Object> handleEmptyNotificationPreferenceUpdate(
+			EmptyNotificationPreferenceUpdateException ex,
+			WebRequest request) {
+		ProblemDetail problem = validationProblem(
+				HttpStatus.BAD_REQUEST,
+				List.of(new FieldViolation("request", ex.getMessage())));
+		return handleExceptionInternal(ex, problem, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
+	}
+
+	@ExceptionHandler(UnsupportedPairException.class)
+	ResponseEntity<Object> handleUnsupportedPair(UnsupportedPairException ex, WebRequest request) {
+		return problem(ex, HttpStatus.NOT_FOUND, "Not Found", UnsupportedPairException.CODE, request);
+	}
+
+	@ExceptionHandler(RateNotAvailableException.class)
+	ResponseEntity<Object> handleRateNotAvailable(RateNotAvailableException ex, WebRequest request) {
+		return problem(ex, HttpStatus.NOT_FOUND, "Not Found", RateNotAvailableException.CODE, request);
+	}
+
+	@ExceptionHandler(InvalidRateHistoryRangeException.class)
+	ResponseEntity<Object> handleInvalidRateHistoryRange(InvalidRateHistoryRangeException ex, WebRequest request) {
+		return problem(ex, HttpStatus.BAD_REQUEST, "Bad Request", InvalidRateHistoryRangeException.CODE, request);
+	}
+
+	@ExceptionHandler(InvalidRateObservationException.class)
+	ResponseEntity<Object> handleInvalidRateObservation(InvalidRateObservationException ex, WebRequest request) {
+		return problem(ex, HttpStatus.BAD_REQUEST, "Bad Request", request);
+	}
+
+	@ExceptionHandler(PropertyReferenceException.class)
+	ResponseEntity<Object> handleUnknownSortProperty(PropertyReferenceException ex, WebRequest request) {
+		return problem(ex, HttpStatus.BAD_REQUEST, "Bad Request", request);
+	}
+
+	@ExceptionHandler(IllegalArgumentException.class)
+	ResponseEntity<Object> handleIllegalArgument(IllegalArgumentException ex, WebRequest request) {
+		return problem(ex, HttpStatus.BAD_REQUEST, "Bad Request", request);
 	}
 
 	@ExceptionHandler(InvalidContactException.class)
@@ -83,6 +173,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
 	@ExceptionHandler(InvalidRefreshTokenException.class)
 	ResponseEntity<Object> handleInvalidRefreshToken(InvalidRefreshTokenException ex, WebRequest request) {
+		return problem(ex, HttpStatus.UNAUTHORIZED, "Unauthorized", request);
+	}
+
+	@ExceptionHandler(InvalidAccessTokenException.class)
+	ResponseEntity<Object> handleInvalidAccessToken(InvalidAccessTokenException ex, WebRequest request) {
 		return problem(ex, HttpStatus.UNAUTHORIZED, "Unauthorized", request);
 	}
 
@@ -126,8 +221,20 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	}
 
 	private ResponseEntity<Object> problem(RuntimeException ex, HttpStatus status, String title, WebRequest request) {
+		return problem(ex, status, title, null, request);
+	}
+
+	private ResponseEntity<Object> problem(
+			RuntimeException ex,
+			HttpStatus status,
+			String title,
+			String code,
+			WebRequest request) {
 		ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, ex.getMessage());
 		problem.setTitle(title);
+		if (code != null) {
+			problem.setProperty("code", code);
+		}
 		return handleExceptionInternal(ex, problem, new HttpHeaders(), status, request);
 	}
 
@@ -136,6 +243,25 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		problem.setTitle("Bad Request");
 		problem.setProperty("errors", errors);
 		return problem;
+	}
+
+	private static String typeMismatchDetail(String name, Class<?> requiredType) {
+		if (requiredType == AssetType.class || "type".equals(name)) {
+			return "type must be one of FIAT, CRYPTO, COMMODITY";
+		}
+		if (requiredType == Instant.class || "from".equals(name) || "to".equals(name)) {
+			return "from and to must be ISO-8601 timestamps";
+		}
+		if ("page".equals(name)) {
+			return "page must be a non-negative integer";
+		}
+		if ("size".equals(name)) {
+			return "size must be a positive integer";
+		}
+		if (requiredType == UUID.class || "id".equals(name)) {
+			return "id must be a UUID";
+		}
+		return "Request parameter is invalid";
 	}
 
 }

@@ -1,11 +1,14 @@
 package com.example.currency.asset.entity;
 
 import com.example.currency.alert.entity.PriceAlert;
-import com.example.currency.common.CreatedAtEntity;
+import com.example.currency.asset.enums.AssetStatus;
+import com.example.currency.common.AuditableEntity;
 import com.example.currency.rate.entity.ExchangeRate;
 import com.example.currency.rate.entity.RateHistory;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -36,7 +39,7 @@ import java.util.UUID;
 		},
 		indexes = @Index(name = "asset_pairs_quote_asset_id_idx", columnList = "quote_asset_id")
 )
-public class AssetPair extends CreatedAtEntity {
+public class AssetPair extends AuditableEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
@@ -55,8 +58,15 @@ public class AssetPair extends CreatedAtEntity {
 	@Column(nullable = false, length = 32)
 	private String symbol;
 
-	@Column(name = "is_active", nullable = false)
-	private boolean active = true;
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 32)
+	private AssetStatus status = AssetStatus.ACTIVE;
+
+	@Column(name = "provider_code", length = 64)
+	private String providerCode;
+
+	@Column(name = "provider_pair_code", length = 64)
+	private String providerPairCode;
 
 	@OneToOne(mappedBy = "pair", fetch = FetchType.LAZY)
 	private ExchangeRate exchangeRate;
@@ -95,12 +105,28 @@ public class AssetPair extends CreatedAtEntity {
 		this.symbol = symbol;
 	}
 
-	public boolean isActive() {
-		return active;
+	public AssetStatus getStatus() {
+		return status;
 	}
 
-	public void setActive(boolean active) {
-		this.active = active;
+	public void setStatus(AssetStatus status) {
+		this.status = status;
+	}
+
+	public String getProviderCode() {
+		return providerCode;
+	}
+
+	public void setProviderCode(String providerCode) {
+		this.providerCode = providerCode;
+	}
+
+	public String getProviderPairCode() {
+		return providerPairCode;
+	}
+
+	public void setProviderPairCode(String providerPairCode) {
+		this.providerPairCode = providerPairCode;
 	}
 
 	public ExchangeRate getExchangeRate() {

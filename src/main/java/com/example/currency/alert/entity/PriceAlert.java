@@ -31,7 +31,10 @@ import java.util.UUID;
 @Entity
 @Table(
 		name = "price_alerts",
-		indexes = @Index(name = "price_alerts_user_status_idx", columnList = "user_id, status")
+		indexes = {
+				@Index(name = "price_alerts_user_status_idx", columnList = "user_id, status"),
+				@Index(name = "price_alerts_user_created_at_idx", columnList = "user_id, created_at")
+		}
 )
 public class PriceAlert extends AuditableEntity {
 

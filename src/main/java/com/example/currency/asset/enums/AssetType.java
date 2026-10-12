@@ -1,7 +1,7 @@
 package com.example.currency.asset.enums;
 
 public enum AssetType {
-	CURRENCY,
+	FIAT,
 	CRYPTO,
 	COMMODITY
 }

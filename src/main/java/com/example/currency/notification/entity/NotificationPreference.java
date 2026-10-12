@@ -32,11 +32,11 @@ public class NotificationPreference extends AuditableEntity {
 	@Column(name = "push_enabled", nullable = false)
 	private boolean pushEnabled = true;
 
+	@Column(name = "in_app_enabled", nullable = false)
+	private boolean inAppEnabled = true;
+
 	@Column(name = "email_enabled", nullable = false)
 	private boolean emailEnabled = false;
-
-	@Column(name = "sms_enabled", nullable = false)
-	private boolean smsEnabled = false;
 
 	public UUID getUserId() {
 		return userId;
@@ -58,20 +58,20 @@ public class NotificationPreference extends AuditableEntity {
 		this.pushEnabled = pushEnabled;
 	}
 
+	public boolean isInAppEnabled() {
+		return inAppEnabled;
+	}
+
+	public void setInAppEnabled(boolean inAppEnabled) {
+		this.inAppEnabled = inAppEnabled;
+	}
+
 	public boolean isEmailEnabled() {
 		return emailEnabled;
 	}
 
 	public void setEmailEnabled(boolean emailEnabled) {
 		this.emailEnabled = emailEnabled;
-	}
-
-	public boolean isSmsEnabled() {
-		return smsEnabled;
-	}
-
-	public void setSmsEnabled(boolean smsEnabled) {
-		this.smsEnabled = smsEnabled;
 	}
 
 }

@@ -64,6 +64,12 @@ public class Notification extends CreatedAtEntity {
 	@Column(name = "sent_at")
 	private Instant sentAt;
 
+	@Column(name = "is_read", nullable = false)
+	private boolean read = false;
+
+	@Column(name = "read_at")
+	private Instant readAt;
+
 	public UUID getId() {
 		return id;
 	}
@@ -122,6 +128,22 @@ public class Notification extends CreatedAtEntity {
 
 	public void setSentAt(Instant sentAt) {
 		this.sentAt = sentAt;
+	}
+
+	public boolean isRead() {
+		return read;
+	}
+
+	public void setRead(boolean read) {
+		this.read = read;
+	}
+
+	public Instant getReadAt() {
+		return readAt;
+	}
+
+	public void setReadAt(Instant readAt) {
+		this.readAt = readAt;
 	}
 
 }

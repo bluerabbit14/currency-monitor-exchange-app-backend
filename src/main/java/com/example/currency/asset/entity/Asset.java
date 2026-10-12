@@ -1,5 +1,6 @@
 package com.example.currency.asset.entity;
 
+import com.example.currency.asset.enums.AssetStatus;
 import com.example.currency.asset.enums.AssetType;
 import com.example.currency.common.AuditableEntity;
 import com.example.currency.watchlist.entity.WatchlistItem;
@@ -22,7 +23,7 @@ import java.util.UUID;
 @Entity
 @Table(
 		name = "assets",
-		indexes = @Index(name = "assets_type_active_idx", columnList = "asset_type, is_active")
+		indexes = @Index(name = "assets_type_status_idx", columnList = "asset_type, status")
 )
 public class Asset extends AuditableEntity {
 
@@ -46,8 +47,15 @@ public class Asset extends AuditableEntity {
 	@Column(name = "decimal_scale", nullable = false)
 	private short decimalScale;
 
-	@Column(name = "is_active", nullable = false)
-	private boolean active = true;
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 32)
+	private AssetStatus status = AssetStatus.ACTIVE;
+
+	@Column(length = 64)
+	private String provider;
+
+	@Column(name = "external_id", length = 255)
+	private String externalId;
 
 	@OneToMany(mappedBy = "baseAsset", fetch = FetchType.LAZY)
 	private Set<AssetPair> basePairs = new LinkedHashSet<>();
@@ -102,12 +110,28 @@ public class Asset extends AuditableEntity {
 		this.decimalScale = decimalScale;
 	}
 
-	public boolean isActive() {
-		return active;
+	public AssetStatus getStatus() {
+		return status;
 	}
 
-	public void setActive(boolean active) {
-		this.active = active;
+	public void setStatus(AssetStatus status) {
+		this.status = status;
+	}
+
+	public String getProvider() {
+		return provider;
+	}
+
+	public void setProvider(String provider) {
+		this.provider = provider;
+	}
+
+	public String getExternalId() {
+		return externalId;
+	}
+
+	public void setExternalId(String externalId) {
+		this.externalId = externalId;
 	}
 
 	public Set<AssetPair> getBasePairs() {

@@ -3,6 +3,7 @@ package com.example.currency.auth.service;
 import com.example.currency.auth.config.JwtProperties;
 import com.example.currency.auth.dto.AuthTokenResponse;
 import com.example.currency.auth.entity.RefreshSession;
+import com.example.currency.auth.exception.InvalidAccessTokenException;
 import com.example.currency.auth.exception.InvalidRefreshTokenException;
 import com.example.currency.auth.repository.RefreshSessionRepository;
 import com.example.currency.user.entity.User;
@@ -69,6 +70,31 @@ public class TokenService {
 		findActive(refreshToken).setRevokedAt(Instant.now());
 	}
 
+	public UUID requireUserId(String authorizationHeader) {
+		if (authorizationHeader == null || !authorizationHeader.startsWith(TOKEN_TYPE + " ")) {
+			throw new InvalidAccessTokenException();
+		}
+		String token = authorizationHeader.substring(TOKEN_TYPE.length() + 1).trim();
+		String[] parts = token.split("\\.");
+		if (parts.length != 3 || parts[0].isEmpty() || parts[1].isEmpty() || parts[2].isEmpty()) {
+			throw new InvalidAccessTokenException();
+		}
+		byte[] actualSignature;
+		byte[] payload;
+		try {
+			actualSignature = Base64.getUrlDecoder().decode(parts[2]);
+			payload = Base64.getUrlDecoder().decode(parts[1]);
+		}
+		catch (IllegalArgumentException ex) {
+			throw new InvalidAccessTokenException();
+		}
+		byte[] expectedSignature = sign(parts[0] + "." + parts[1]);
+		if (!MessageDigest.isEqual(expectedSignature, actualSignature)) {
+			throw new InvalidAccessTokenException();
+		}
+		return subject(new String(payload, StandardCharsets.UTF_8));
+	}
+
 	private RefreshSession findActive(String refreshToken) {
 		if (refreshToken == null || refreshToken.isBlank()) {
 			throw new InvalidRefreshTokenException();
@@ -126,6 +152,65 @@ public class TokenService {
 
 	private static String base64Url(byte[] value) {
 		return Base64.getUrlEncoder().withoutPadding().encodeToString(value);
+	}
+
+	private static UUID subject(String payload) {
+		String userId = stringClaim(payload, "sub");
+		String expiresAt = numberClaim(payload, "exp");
+		if (userId == null || expiresAt == null) {
+			throw new InvalidAccessTokenException();
+		}
+		long expiry;
+		try {
+			expiry = Long.parseLong(expiresAt);
+		}
+		catch (NumberFormatException ex) {
+			throw new InvalidAccessTokenException();
+		}
+		if (expiry <= Instant.now().getEpochSecond()) {
+			throw new InvalidAccessTokenException();
+		}
+		try {
+			return UUID.fromString(userId);
+		}
+		catch (IllegalArgumentException ex) {
+			throw new InvalidAccessTokenException();
+		}
+	}
+
+	private static String stringClaim(String json, String name) {
+		String marker = "\"" + name + "\":\"";
+		int start = json.indexOf(marker);
+		if (start < 0) {
+			return null;
+		}
+		start += marker.length();
+		int end = json.indexOf('"', start);
+		if (end < 0) {
+			return null;
+		}
+		return json.substring(start, end);
+	}
+
+	private static String numberClaim(String json, String name) {
+		String marker = "\"" + name + "\":";
+		int start = json.indexOf(marker);
+		if (start < 0) {
+			return null;
+		}
+		start += marker.length();
+		int end = start;
+		while (end < json.length()) {
+			char current = json.charAt(end);
+			if ((current < '0' || current > '9') && current != '-') {
+				break;
+			}
+			end++;
+		}
+		if (end == start) {
+			return null;
+		}
+		return json.substring(start, end);
 	}
 
 }

@@ -10,7 +10,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -19,13 +18,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(
-		name = "rate_history",
-		uniqueConstraints = @UniqueConstraint(
-				name = "rate_history_pair_recorded_uq",
-				columnNames = {"pair_id", "recorded_at"}
-		)
-)
+@Table(name = "rate_history")
 public class RateHistory {
 
 	@Id
@@ -40,11 +33,17 @@ public class RateHistory {
 	@Column(nullable = false, precision = 28, scale = 12)
 	private BigDecimal rate;
 
-	@Column(name = "recorded_at", nullable = false)
-	private Instant recordedAt;
+	@Column(name = "observed_at", nullable = false)
+	private Instant observedAt;
 
-	@Column(nullable = false, length = 64)
-	private String source;
+	@Column(name = "fetched_at", nullable = false)
+	private Instant fetchedAt;
+
+	@Column(name = "provider_code", nullable = false, length = 64)
+	private String providerCode;
+
+	@Column(name = "provider_observation_id", length = 255)
+	private String providerObservationId;
 
 	public UUID getId() {
 		return id;
@@ -66,20 +65,36 @@ public class RateHistory {
 		this.rate = rate;
 	}
 
-	public Instant getRecordedAt() {
-		return recordedAt;
+	public Instant getObservedAt() {
+		return observedAt;
 	}
 
-	public void setRecordedAt(Instant recordedAt) {
-		this.recordedAt = recordedAt;
+	public void setObservedAt(Instant observedAt) {
+		this.observedAt = observedAt;
 	}
 
-	public String getSource() {
-		return source;
+	public Instant getFetchedAt() {
+		return fetchedAt;
 	}
 
-	public void setSource(String source) {
-		this.source = source;
+	public void setFetchedAt(Instant fetchedAt) {
+		this.fetchedAt = fetchedAt;
+	}
+
+	public String getProviderCode() {
+		return providerCode;
+	}
+
+	public void setProviderCode(String providerCode) {
+		this.providerCode = providerCode;
+	}
+
+	public String getProviderObservationId() {
+		return providerObservationId;
+	}
+
+	public void setProviderObservationId(String providerObservationId) {
+		this.providerObservationId = providerObservationId;
 	}
 
 }

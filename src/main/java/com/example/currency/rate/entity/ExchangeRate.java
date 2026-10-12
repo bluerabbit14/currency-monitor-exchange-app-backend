@@ -8,8 +8,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
@@ -35,26 +33,14 @@ public class ExchangeRate {
 	@Column(nullable = false, precision = 28, scale = 12)
 	private BigDecimal rate;
 
-	@Column(name = "previous_rate", precision = 28, scale = 12)
-	private BigDecimal previousRate;
-
-	@Column(name = "change_percent", precision = 28, scale = 12)
-	private BigDecimal changePercent;
-
-	@Column(nullable = false, length = 64)
-	private String source;
+	@Column(name = "observed_at", nullable = false)
+	private Instant observedAt;
 
 	@Column(name = "fetched_at", nullable = false)
 	private Instant fetchedAt;
 
-	@Column(name = "updated_at", nullable = false)
-	private Instant updatedAt;
-
-	@PrePersist
-	@PreUpdate
-	protected void onWrite() {
-		updatedAt = Instant.now();
-	}
+	@Column(name = "provider_code", nullable = false, length = 64)
+	private String providerCode;
 
 	public UUID getPairId() {
 		return pairId;
@@ -76,28 +62,12 @@ public class ExchangeRate {
 		this.rate = rate;
 	}
 
-	public BigDecimal getPreviousRate() {
-		return previousRate;
+	public Instant getObservedAt() {
+		return observedAt;
 	}
 
-	public void setPreviousRate(BigDecimal previousRate) {
-		this.previousRate = previousRate;
-	}
-
-	public BigDecimal getChangePercent() {
-		return changePercent;
-	}
-
-	public void setChangePercent(BigDecimal changePercent) {
-		this.changePercent = changePercent;
-	}
-
-	public String getSource() {
-		return source;
-	}
-
-	public void setSource(String source) {
-		this.source = source;
+	public void setObservedAt(Instant observedAt) {
+		this.observedAt = observedAt;
 	}
 
 	public Instant getFetchedAt() {
@@ -108,8 +78,12 @@ public class ExchangeRate {
 		this.fetchedAt = fetchedAt;
 	}
 
-	public Instant getUpdatedAt() {
-		return updatedAt;
+	public String getProviderCode() {
+		return providerCode;
+	}
+
+	public void setProviderCode(String providerCode) {
+		this.providerCode = providerCode;
 	}
 
 }
