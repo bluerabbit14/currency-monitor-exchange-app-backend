@@ -8,6 +8,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
@@ -41,6 +43,19 @@ public class ExchangeRate {
 
 	@Column(name = "provider_code", nullable = false, length = 64)
 	private String providerCode;
+
+	@Column(name = "updated_at", nullable = false)
+	private Instant updatedAt;
+
+	@PrePersist
+	@PreUpdate
+	void touchUpdatedAt() {
+		updatedAt = Instant.now();
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
+	}
 
 	public UUID getPairId() {
 		return pairId;

@@ -17,7 +17,7 @@ public class OpenApiConfig {
 		return new OpenAPI()
 				.info(new Info()
 						.title("Currency Monitor API")
-						.description("Exchange rate monitoring, watchlists, and price alerts.")
+						.description("Exchange rate monitoring, favorites, and price alerts.")
 						.version("v1"))
 				.components(new Components().addSecuritySchemes(BEARER_AUTH, new SecurityScheme()
 						.name(BEARER_AUTH)

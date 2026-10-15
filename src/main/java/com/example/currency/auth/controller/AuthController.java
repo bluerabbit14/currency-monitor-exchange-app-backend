@@ -7,6 +7,8 @@ import com.example.currency.auth.dto.OtpVerifyRequest;
 import com.example.currency.auth.dto.RefreshTokenRequest;
 import com.example.currency.auth.service.OtpService;
 import com.example.currency.auth.service.TokenService;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/auth")
+@Tag(name = "Auth")
 public class AuthController {
 
 	static final String OTP_SENT_MESSAGE =

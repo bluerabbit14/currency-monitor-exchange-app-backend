@@ -107,7 +107,8 @@ public class OtpService {
 		verification.setIdentifier(email);
 		verification.setIdentifierType(OtpIdentifierType.EMAIL);
 		verification.setPurpose(user == null ? OtpPurpose.SIGN_UP : OtpPurpose.SIGN_IN);
-		verification.setOtpHash(otpHasher.hash(otp));
+		//verification.setOtpHash(otpHasher.hash(otp));
+	    verification.setOtpHash(otp);  //for testing keep the otp unhashed
 		verification.setExpiresAt(Instant.now().plusSeconds(otpProperties.getTtlSeconds()));
 		verification.setAttemptCount(0);
 		otpRepository.save(verification);

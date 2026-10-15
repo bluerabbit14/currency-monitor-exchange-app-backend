@@ -5,7 +5,6 @@ import com.example.currency.common.AuditableEntity;
 import com.example.currency.notification.entity.Notification;
 import com.example.currency.notification.entity.NotificationPreference;
 import com.example.currency.user.enums.UserStatus;
-import com.example.currency.watchlist.entity.Watchlist;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -53,6 +52,18 @@ public class User extends AuditableEntity {
 	@Column(name = "last_login_at")
 	private Instant lastLoginAt;
 
+	@Column(name = "base_asset_id")
+	private UUID baseAssetId;
+
+	@Column(length = 16)
+	private String locale;
+
+	@Column(length = 64)
+	private String timezone;
+
+	@Column(name = "email_verified_at")
+	private Instant emailVerifiedAt;
+
 	@OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
 	private Set<UserAuthProvider> authProviders = new LinkedHashSet<>();
 
@@ -64,9 +75,6 @@ public class User extends AuditableEntity {
 
 	@OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
 	private NotificationPreference notificationPreference;
-
-	@OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-	private Set<Watchlist> watchlists = new LinkedHashSet<>();
 
 	@OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
 	private Set<PriceAlert> priceAlerts = new LinkedHashSet<>();
@@ -126,6 +134,38 @@ public class User extends AuditableEntity {
 		this.lastLoginAt = lastLoginAt;
 	}
 
+	public UUID getBaseAssetId() {
+		return baseAssetId;
+	}
+
+	public void setBaseAssetId(UUID baseAssetId) {
+		this.baseAssetId = baseAssetId;
+	}
+
+	public String getLocale() {
+		return locale;
+	}
+
+	public void setLocale(String locale) {
+		this.locale = locale;
+	}
+
+	public String getTimezone() {
+		return timezone;
+	}
+
+	public void setTimezone(String timezone) {
+		this.timezone = timezone;
+	}
+
+	public Instant getEmailVerifiedAt() {
+		return emailVerifiedAt;
+	}
+
+	public void setEmailVerifiedAt(Instant emailVerifiedAt) {
+		this.emailVerifiedAt = emailVerifiedAt;
+	}
+
 	public Set<UserAuthProvider> getAuthProviders() {
 		return authProviders;
 	}
@@ -140,10 +180,6 @@ public class User extends AuditableEntity {
 
 	public NotificationPreference getNotificationPreference() {
 		return notificationPreference;
-	}
-
-	public Set<Watchlist> getWatchlists() {
-		return watchlists;
 	}
 
 	public Set<PriceAlert> getPriceAlerts() {

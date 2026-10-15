@@ -3,7 +3,6 @@ package com.example.currency.asset.entity;
 import com.example.currency.asset.enums.AssetStatus;
 import com.example.currency.asset.enums.AssetType;
 import com.example.currency.common.AuditableEntity;
-import com.example.currency.watchlist.entity.WatchlistItem;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -64,8 +63,6 @@ public class Asset extends AuditableEntity {
 	private Set<AssetPair> quotePairs = new LinkedHashSet<>();
 
 	@OneToMany(mappedBy = "asset", fetch = FetchType.LAZY)
-	private Set<WatchlistItem> watchlistItems = new LinkedHashSet<>();
-
 	public UUID getId() {
 		return id;
 	}
@@ -140,10 +137,6 @@ public class Asset extends AuditableEntity {
 
 	public Set<AssetPair> getQuotePairs() {
 		return quotePairs;
-	}
-
-	public Set<WatchlistItem> getWatchlistItems() {
-		return watchlistItems;
 	}
 
 }
