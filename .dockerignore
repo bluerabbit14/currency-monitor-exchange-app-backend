@@ -3,7 +3,11 @@ target/
 .gitignore
 .idea/
 .vscode/
-.iml
+*.iml
 .env
-.env.
+.env.*
 !.env.example
+docs/
+HELP.md
+Dockerfile
+.dockerignore
