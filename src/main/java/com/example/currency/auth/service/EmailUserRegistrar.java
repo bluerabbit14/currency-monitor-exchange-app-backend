@@ -25,18 +25,22 @@ public class EmailUserRegistrar {
 		this.userAuthProviderRepository = userAuthProviderRepository;
 	}
 
+	/** Creates the account for an already OTP-verified email. Profile columns stay NULL. */
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public User register(String email) {
+		Instant now = Instant.now();
 		User user = new User();
 		user.setEmail(email);
 		user.setStatus(UserStatus.ACTIVE);
+		user.setEmailVerifiedAt(now);
+		user.setLastLoginAt(now);
 		user = userRepository.saveAndFlush(user);
 
 		UserAuthProvider provider = new UserAuthProvider();
 		provider.setUser(user);
 		provider.setProvider(AuthProvider.EMAIL);
 		provider.setProviderUserId(email);
-		provider.setLastUsedAt(Instant.now());
+		provider.setLastUsedAt(now);
 		userAuthProviderRepository.save(provider);
 		return user;
 	}

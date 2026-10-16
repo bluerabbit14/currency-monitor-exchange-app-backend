@@ -110,7 +110,7 @@ Gate with `percent_alerts` and `repeating_alerts` entitlements.
 | Rate limiting | TODO | Per email + per IP on `/otp/send` and `/otp/verify` (Bucket4j, or Redis when scaling). |
 | Google / Apple OIDC | TODO | `POST /auth/oidc/{provider}` takes an ID token, verify via provider JWKS (`iss`, `aud`, `exp`, `nonce`), upsert `user_auth_providers`. Link to existing user only if the provider email is verified. Apple only returns email/name on first login, so persist it then. |
 | Phone OTP | TODO | Needs an SMS provider (cost + regional sender rules), then flip `PhoneOtpNotSupportedException`. |
-| Session audit | SCHEMA | Fill `ip_address`/`user_agent` on `refresh_sessions` and `otp_verifications`. |
+| Session audit | SCHEMA | Fill `ip_address`/`user_agent` on `refresh_sessions` and `system_logs`. |
 
 ## 5. Monetization
 

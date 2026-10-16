@@ -49,6 +49,12 @@
         <version>3.1.1</version>
     </dependency>
 
+    <!-- Redis (OTP challenges, pending registrations) -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-data-redis</artifactId>
+    </dependency>
+
     <!-- PostgreSQL / Neon -->
     <dependency>
         <groupId>org.postgresql</groupId>

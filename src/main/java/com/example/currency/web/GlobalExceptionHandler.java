@@ -30,6 +30,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -42,6 +43,42 @@ import java.util.UUID;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+
+	/** Every error path ends here; ProblemDetail bodies are re-shaped into the ApiResponse envelope. */
+	@Override
+	protected ResponseEntity<Object> handleExceptionInternal(
+			Exception ex,
+			Object body,
+			HttpHeaders headers,
+			HttpStatusCode statusCode,
+			WebRequest request) {
+		ResponseEntity<Object> response = super.handleExceptionInternal(ex, body, headers, statusCode, request);
+		if (response == null || !(response.getBody() instanceof ProblemDetail problem)) {
+			return response;
+		}
+		String path = request instanceof ServletWebRequest servlet ? servlet.getRequest().getRequestURI() : null;
+		Object code = problem.getProperties() == null ? null : problem.getProperties().get("code");
+		Object errors = problem.getProperties() == null ? null : problem.getProperties().get("errors");
+		@SuppressWarnings("unchecked")
+		List<FieldViolation> details = errors instanceof List<?> list ? (List<FieldViolation>) list : null;
+		String title = problem.getTitle();
+		ApiResponse.ApiError error = new ApiResponse.ApiError(
+				code != null ? code.toString() : defaultCode(statusCode, details),
+				title,
+				problem.getDetail(),
+				details);
+		return ResponseEntity.status(statusCode)
+				.headers(response.getHeaders())
+				.body(ApiResponse.failure(statusCode.value(), error, path));
+	}
+
+	private static String defaultCode(HttpStatusCode status, List<FieldViolation> details) {
+		if (details != null) {
+			return "VALIDATION_FAILED";
+		}
+		HttpStatus resolved = HttpStatus.resolve(status.value());
+		return resolved == null ? "ERROR" : resolved.name();
+	}
 
 	@Override
 	protected ResponseEntity<Object> handleMethodArgumentNotValid(
@@ -202,10 +239,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
 	@ExceptionHandler(DataAccessException.class)
 	ResponseEntity<Object> handleDataAccess(DataAccessException ex, WebRequest request) {
-		logger.error("Database error", ex);
+		logger.error("Data store error", ex);
 		ProblemDetail problem = ProblemDetail.forStatusAndDetail(
 				HttpStatus.SERVICE_UNAVAILABLE,
-				"Database is unavailable");
+				"A required data store is unavailable");
 		problem.setTitle("Service Unavailable");
 		return handleExceptionInternal(ex, problem, new HttpHeaders(), HttpStatus.SERVICE_UNAVAILABLE, request);
 	}

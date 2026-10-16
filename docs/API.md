@@ -104,7 +104,7 @@ Paginated response (Spring `Page<T>`):
 | 5 | Auth | POST | `/api/v1/auth/logout` | No |
 | 6 | Users | GET | `/api/v1/users/me` | Yes |
 | 7 | Users | PATCH | `/api/v1/users/me` | Yes |
-| 8 | Users | DELETE | `/api/v1/users/me` | Yes |
+| 8 | Account deletion | POST | `/api/v1/users/me/deletion/otp` (send identity OTP), `/api/v1/users/me/deletion` (request, 30-day grace), `/api/v1/auth/deletion/cancel` (cancel + sign in; no auth header) | Yes / Yes / No |
 | 9 | Assets | GET | `/api/v1/assets` | No |
 | 10 | Assets | GET | `/api/v1/assets/{id}` | No |
 | 11 | Rates | GET | `/api/v1/rates` | No |

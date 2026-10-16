@@ -68,9 +68,6 @@ public class User extends AuditableEntity {
 	private Set<UserAuthProvider> authProviders = new LinkedHashSet<>();
 
 	@OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-	private Set<OtpVerification> otpVerifications = new LinkedHashSet<>();
-
-	@OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
 	private Set<UserDevice> devices = new LinkedHashSet<>();
 
 	@OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
@@ -168,10 +165,6 @@ public class User extends AuditableEntity {
 
 	public Set<UserAuthProvider> getAuthProviders() {
 		return authProviders;
-	}
-
-	public Set<OtpVerification> getOtpVerifications() {
-		return otpVerifications;
 	}
 
 	public Set<UserDevice> getDevices() {

@@ -80,12 +80,12 @@ class PriceAlertControllerTest {
 								}
 								"""))
 				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.id").value(alertId.toString()))
-				.andExpect(jsonPath("$.base").value("USD"))
-				.andExpect(jsonPath("$.quote").value("INR"))
-				.andExpect(jsonPath("$.condition").value("ABOVE"))
-				.andExpect(jsonPath("$.targetRate").value(90.00))
-				.andExpect(jsonPath("$.status").value("ACTIVE"));
+				.andExpect(jsonPath("$.body.id").value(alertId.toString()))
+				.andExpect(jsonPath("$.body.base").value("USD"))
+				.andExpect(jsonPath("$.body.quote").value("INR"))
+				.andExpect(jsonPath("$.body.condition").value("ABOVE"))
+				.andExpect(jsonPath("$.body.targetRate").value(90.00))
+				.andExpect(jsonPath("$.body.status").value("ACTIVE"));
 
 		verify(priceAlertService).create(eq(userId), any(CreatePriceAlertRequest.class));
 	}
@@ -109,7 +109,7 @@ class PriceAlertControllerTest {
 								}
 								"""))
 				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.code").value("UNSUPPORTED_PAIR"));
+				.andExpect(jsonPath("$.error.code").value("UNSUPPORTED_PAIR"));
 	}
 
 	@Test
@@ -158,8 +158,8 @@ class PriceAlertControllerTest {
 		mockMvc.perform(get("/api/v1/users/me/alerts")
 						.header(HttpHeaders.AUTHORIZATION, AUTH))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.content[0].id").value(alertId.toString()))
-				.andExpect(jsonPath("$.content[0].base").value("USD"));
+				.andExpect(jsonPath("$.body.content[0].id").value(alertId.toString()))
+				.andExpect(jsonPath("$.body.content[0].base").value("USD"));
 
 		ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
 		verify(priceAlertService).list(eq(userId), pageable.capture());
@@ -179,8 +179,8 @@ class PriceAlertControllerTest {
 		mockMvc.perform(get("/api/v1/users/me/alerts/{alertId}", alertId)
 						.header(HttpHeaders.AUTHORIZATION, AUTH))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.id").value(alertId.toString()))
-				.andExpect(jsonPath("$.base").value("BTC"));
+				.andExpect(jsonPath("$.body.id").value(alertId.toString()))
+				.andExpect(jsonPath("$.body.base").value("BTC"));
 	}
 
 	@Test
@@ -193,7 +193,7 @@ class PriceAlertControllerTest {
 		mockMvc.perform(get("/api/v1/users/me/alerts/{alertId}", alertId)
 						.header(HttpHeaders.AUTHORIZATION, AUTH))
 				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.detail").value("Alert not found"));
+				.andExpect(jsonPath("$.error.message").value("Alert not found"));
 	}
 
 	@Test
@@ -214,9 +214,9 @@ class PriceAlertControllerTest {
 								}
 								"""))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.condition").value("BELOW"))
-				.andExpect(jsonPath("$.targetRate").value(89.50))
-				.andExpect(jsonPath("$.status").value("TRIGGERED"));
+				.andExpect(jsonPath("$.body.condition").value("BELOW"))
+				.andExpect(jsonPath("$.body.targetRate").value(89.50))
+				.andExpect(jsonPath("$.body.status").value("TRIGGERED"));
 	}
 
 	@Test

@@ -8,6 +8,7 @@ import com.example.currency.auth.exception.InvalidRefreshTokenException;
 import com.example.currency.auth.repository.RefreshSessionRepository;
 import com.example.currency.user.entity.User;
 import com.example.currency.user.enums.UserStatus;
+import com.example.currency.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,6 +35,9 @@ class TokenServiceTest {
 
 	@Mock
 	private RefreshSessionRepository refreshSessionRepository;
+
+	@Mock
+	private UserRepository userRepository;
 
 	private TokenService tokenService;
 
@@ -44,7 +49,8 @@ class TokenServiceTest {
 		properties.setSecret("test-jwt-secret");
 		properties.setAccessTtlSeconds(900);
 		properties.setRefreshTtlSeconds(2_592_000);
-		tokenService = new TokenService(refreshSessionRepository, properties);
+		tokenService = new TokenService(refreshSessionRepository, userRepository, properties);
+		lenient().when(userRepository.existsByIdAndStatus(any(), eq(UserStatus.ACTIVE))).thenReturn(true);
 		lenient().when(refreshSessionRepository.save(any(RefreshSession.class))).thenAnswer(invocation -> {
 			RefreshSession session = invocation.getArgument(0);
 			sessions.put(session.getTokenHash(), session);
@@ -118,7 +124,7 @@ class TokenServiceTest {
 		properties.setSecret("test-jwt-secret");
 		properties.setAccessTtlSeconds(-1);
 		properties.setRefreshTtlSeconds(2_592_000);
-		TokenService expiredTokens = new TokenService(refreshSessionRepository, properties);
+		TokenService expiredTokens = new TokenService(refreshSessionRepository, userRepository, properties);
 		AuthTokenResponse issued = expiredTokens.issue(activeUser());
 
 		assertThrows(InvalidAccessTokenException.class,

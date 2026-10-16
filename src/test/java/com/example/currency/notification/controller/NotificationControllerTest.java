@@ -60,8 +60,8 @@ class NotificationControllerTest {
 		mockMvc.perform(get("/api/v1/users/me/notifications")
 						.header(HttpHeaders.AUTHORIZATION, AUTH))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.content[0].id").value(notificationId.toString()))
-				.andExpect(jsonPath("$.content[0].message").value("Hello"));
+				.andExpect(jsonPath("$.body.content[0].id").value(notificationId.toString()))
+				.andExpect(jsonPath("$.body.content[0].message").value("Hello"));
 
 		verify(notificationService).list(eq(userId), eq(false), any());
 	}
@@ -90,7 +90,7 @@ class NotificationControllerTest {
 		mockMvc.perform(get("/api/v1/users/me/notifications/{notificationId}", notificationId)
 						.header(HttpHeaders.AUTHORIZATION, AUTH))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.id").value(notificationId.toString()));
+				.andExpect(jsonPath("$.body.id").value(notificationId.toString()));
 	}
 
 	@Test
@@ -112,7 +112,7 @@ class NotificationControllerTest {
 		mockMvc.perform(patch("/api/v1/users/me/notifications/{notificationId}/read", notificationId)
 						.header(HttpHeaders.AUTHORIZATION, AUTH))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.isRead").value(true));
+				.andExpect(jsonPath("$.body.isRead").value(true));
 	}
 
 	@Test
@@ -124,7 +124,7 @@ class NotificationControllerTest {
 		mockMvc.perform(patch("/api/v1/users/me/notifications/read-all")
 						.header(HttpHeaders.AUTHORIZATION, AUTH))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.updatedCount").value(3));
+				.andExpect(jsonPath("$.body.updatedCount").value(3));
 
 		verify(notificationService).markAllRead(userId);
 	}
@@ -162,7 +162,7 @@ class NotificationControllerTest {
 		mockMvc.perform(get("/api/v1/users/me/notifications/{notificationId}", notificationId)
 						.header(HttpHeaders.AUTHORIZATION, AUTH))
 				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.detail").value("Notification not found"));
+				.andExpect(jsonPath("$.error.message").value("Notification not found"));
 	}
 
 	private static NotificationResponse response(UUID id) {

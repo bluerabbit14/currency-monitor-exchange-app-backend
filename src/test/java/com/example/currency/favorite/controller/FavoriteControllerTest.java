@@ -55,10 +55,10 @@ class FavoriteControllerTest {
 		mockMvc.perform(post("/api/v1/users/me/favorites/{assetId}", assetId)
 						.header(HttpHeaders.AUTHORIZATION, AUTH))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.assetId").value(assetId.toString()))
-				.andExpect(jsonPath("$.symbol").value("BTC"))
-				.andExpect(jsonPath("$.type").value("CRYPTO"))
-				.andExpect(jsonPath("$.createdAt").value("2026-10-12T04:00:00Z"));
+				.andExpect(jsonPath("$.body.assetId").value(assetId.toString()))
+				.andExpect(jsonPath("$.body.symbol").value("BTC"))
+				.andExpect(jsonPath("$.body.type").value("CRYPTO"))
+				.andExpect(jsonPath("$.body.createdAt").value("2026-10-12T04:00:00Z"));
 
 		verify(favoriteService).add(userId, assetId);
 	}
@@ -74,8 +74,8 @@ class FavoriteControllerTest {
 		mockMvc.perform(get("/api/v1/users/me/favorites")
 						.header(HttpHeaders.AUTHORIZATION, AUTH))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$[0].assetId").value(assetId.toString()))
-				.andExpect(jsonPath("$[0].symbol").value("ETH"));
+				.andExpect(jsonPath("$.body[0].assetId").value(assetId.toString()))
+				.andExpect(jsonPath("$.body[0].symbol").value("ETH"));
 
 		verify(favoriteService).list(userId);
 	}
@@ -99,8 +99,8 @@ class FavoriteControllerTest {
 
 		mockMvc.perform(get("/api/v1/users/me/favorites"))
 				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.title").value("Unauthorized"))
-				.andExpect(jsonPath("$.detail").value("Invalid or expired access token"));
+				.andExpect(jsonPath("$.error.title").value("Unauthorized"))
+				.andExpect(jsonPath("$.error.message").value("Invalid or expired access token"));
 
 		verify(favoriteService, never()).list(any());
 	}
@@ -115,7 +115,7 @@ class FavoriteControllerTest {
 		mockMvc.perform(post("/api/v1/users/me/favorites/{assetId}", assetId)
 						.header(HttpHeaders.AUTHORIZATION, AUTH))
 				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.detail").value("Asset not found"));
+				.andExpect(jsonPath("$.error.message").value("Asset not found"));
 	}
 
 	@Test

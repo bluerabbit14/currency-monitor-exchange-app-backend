@@ -51,10 +51,10 @@ class AssetControllerTest {
 
 		mockMvc.perform(get("/api/v1/assets"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.content[0].symbol").value("USD"))
-				.andExpect(jsonPath("$.content[0].name").value("US Dollar"))
-				.andExpect(jsonPath("$.content[0].type").value("FIAT"))
-				.andExpect(jsonPath("$.content[0].status").value("ACTIVE"));
+				.andExpect(jsonPath("$.body.content[0].symbol").value("USD"))
+				.andExpect(jsonPath("$.body.content[0].name").value("US Dollar"))
+				.andExpect(jsonPath("$.body.content[0].type").value("FIAT"))
+				.andExpect(jsonPath("$.body.content[0].status").value("ACTIVE"));
 	}
 
 	@Test
@@ -64,8 +64,8 @@ class AssetControllerTest {
 
 		mockMvc.perform(get("/api/v1/assets").param("type", "FIAT"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.content[0].symbol").value("EUR"))
-				.andExpect(jsonPath("$.content[0].type").value("FIAT"));
+				.andExpect(jsonPath("$.body.content[0].symbol").value("EUR"))
+				.andExpect(jsonPath("$.body.content[0].type").value("FIAT"));
 	}
 
 	@Test
@@ -75,8 +75,8 @@ class AssetControllerTest {
 
 		mockMvc.perform(get("/api/v1/assets").param("type", "CRYPTO"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.content[0].symbol").value("ETH"))
-				.andExpect(jsonPath("$.content[0].type").value("CRYPTO"));
+				.andExpect(jsonPath("$.body.content[0].symbol").value("ETH"))
+				.andExpect(jsonPath("$.body.content[0].type").value("CRYPTO"));
 	}
 
 	@Test
@@ -86,8 +86,8 @@ class AssetControllerTest {
 
 		mockMvc.perform(get("/api/v1/assets").param("type", "COMMODITY"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.content[0].symbol").value("GOLD"))
-				.andExpect(jsonPath("$.content[0].type").value("COMMODITY"));
+				.andExpect(jsonPath("$.body.content[0].symbol").value("GOLD"))
+				.andExpect(jsonPath("$.body.content[0].type").value("COMMODITY"));
 	}
 
 	@Test
@@ -97,7 +97,7 @@ class AssetControllerTest {
 
 		mockMvc.perform(get("/api/v1/assets").param("search", "usd"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.content[0].symbol").value("USD"));
+				.andExpect(jsonPath("$.body.content[0].symbol").value("USD"));
 	}
 
 	@Test
@@ -107,8 +107,8 @@ class AssetControllerTest {
 
 		mockMvc.perform(get("/api/v1/assets").param("type", "CRYPTO").param("search", "bit"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.content[0].symbol").value("BTC"))
-				.andExpect(jsonPath("$.content[0].type").value("CRYPTO"));
+				.andExpect(jsonPath("$.body.content[0].symbol").value("BTC"))
+				.andExpect(jsonPath("$.body.content[0].type").value("CRYPTO"));
 	}
 
 	@Test
@@ -118,17 +118,17 @@ class AssetControllerTest {
 
 		mockMvc.perform(get("/api/v1/assets/{id}", bitcoin.id()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.id").value(bitcoin.id().toString()))
-				.andExpect(jsonPath("$.symbol").value("BTC"))
-				.andExpect(jsonPath("$.status").value("ACTIVE"));
+				.andExpect(jsonPath("$.body.id").value(bitcoin.id().toString()))
+				.andExpect(jsonPath("$.body.symbol").value("BTC"))
+				.andExpect(jsonPath("$.body.status").value("ACTIVE"));
 	}
 
 	@Test
 	void invalidCategoryIsBadRequest() throws Exception {
 		mockMvc.perform(get("/api/v1/assets").param("type", "STOCK"))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.title").value("Bad Request"))
-				.andExpect(jsonPath("$.detail").value("type must be one of FIAT, CRYPTO, COMMODITY"));
+				.andExpect(jsonPath("$.error.title").value("Bad Request"))
+				.andExpect(jsonPath("$.error.message").value("type must be one of FIAT, CRYPTO, COMMODITY"));
 
 		verify(assetService, never()).listActive(any(), any(), any());
 	}
@@ -140,8 +140,8 @@ class AssetControllerTest {
 
 		mockMvc.perform(get("/api/v1/assets/{id}", id))
 				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.title").value("Not Found"))
-				.andExpect(jsonPath("$.detail").value("Asset not found"));
+				.andExpect(jsonPath("$.error.title").value("Not Found"))
+				.andExpect(jsonPath("$.error.message").value("Asset not found"));
 	}
 
 	@Test
@@ -151,14 +151,14 @@ class AssetControllerTest {
 
 		mockMvc.perform(get("/api/v1/assets/{id}", id))
 				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.detail").value("Asset not found"));
+				.andExpect(jsonPath("$.error.message").value("Asset not found"));
 	}
 
 	@Test
 	void malformedIdIsBadRequest() throws Exception {
 		mockMvc.perform(get("/api/v1/assets/{id}", "not-a-uuid"))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.detail").value("id must be a UUID"));
+				.andExpect(jsonPath("$.error.message").value("id must be a UUID"));
 	}
 
 	@Test
@@ -176,9 +176,9 @@ class AssetControllerTest {
 						.param("page", "0")
 						.param("size", "20"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.content[0].symbol").value("BTC"))
-				.andExpect(jsonPath("$.page.number").value(0))
-				.andExpect(jsonPath("$.page.size").value(20));
+				.andExpect(jsonPath("$.body.content[0].symbol").value("BTC"))
+				.andExpect(jsonPath("$.body.page.number").value(0))
+				.andExpect(jsonPath("$.body.page.size").value(20));
 
 		verify(assetService).listActive(eq(AssetType.CRYPTO), isNull(), pageable.capture());
 		assertEquals(0, pageable.getValue().getPageNumber());
@@ -213,7 +213,7 @@ class AssetControllerTest {
 	void rejectsNonNumericPage() throws Exception {
 		mockMvc.perform(get("/api/v1/assets").param("page", "abc"))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.detail").value("page must be a non-negative integer"));
+				.andExpect(jsonPath("$.error.message").value("page must be a non-negative integer"));
 	}
 
 	@Test

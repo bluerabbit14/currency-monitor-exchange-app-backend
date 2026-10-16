@@ -52,9 +52,9 @@ class RateControllerTest {
 
 		mockMvc.perform(get("/api/v1/rates"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.content[0].base").value("BTC"))
-				.andExpect(jsonPath("$.content[0].quote").value("USD"))
-				.andExpect(jsonPath("$.content[0].stale").value(false));
+				.andExpect(jsonPath("$.body.content[0].base").value("BTC"))
+				.andExpect(jsonPath("$.body.content[0].quote").value("USD"))
+				.andExpect(jsonPath("$.body.content[0].stale").value(false));
 	}
 
 	@Test
@@ -67,8 +67,8 @@ class RateControllerTest {
 						.param("base", "BTC")
 						.param("quote", "USD"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.content[0].base").value("BTC"))
-				.andExpect(jsonPath("$.content[0].stale").value(true));
+				.andExpect(jsonPath("$.body.content[0].base").value("BTC"))
+				.andExpect(jsonPath("$.body.content[0].stale").value(true));
 	}
 
 	@Test
@@ -78,10 +78,10 @@ class RateControllerTest {
 
 		mockMvc.perform(get("/api/v1/rates/{base}/{quote}", "USD", "INR"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.base").value("USD"))
-				.andExpect(jsonPath("$.quote").value("INR"))
-				.andExpect(jsonPath("$.rate").value(83.1))
-				.andExpect(jsonPath("$.providerCode").value("test-provider"));
+				.andExpect(jsonPath("$.body.base").value("USD"))
+				.andExpect(jsonPath("$.body.quote").value("INR"))
+				.andExpect(jsonPath("$.body.rate").value(83.1))
+				.andExpect(jsonPath("$.body.providerCode").value("test-provider"));
 	}
 
 	@Test
@@ -93,15 +93,15 @@ class RateControllerTest {
 						.param("from", "2026-10-01T00:00:00Z")
 						.param("to", "2026-10-12T00:00:00Z"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.content[0].rate").value(83.1))
-				.andExpect(jsonPath("$.content[0].providerCode").value("test-provider"));
+				.andExpect(jsonPath("$.body.content[0].rate").value(83.1))
+				.andExpect(jsonPath("$.body.content[0].providerCode").value("test-provider"));
 	}
 
 	@Test
 	void invalidTypeIsBadRequest() throws Exception {
 		mockMvc.perform(get("/api/v1/rates").param("type", "STOCK"))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.detail").value("type must be one of FIAT, CRYPTO, COMMODITY"));
+				.andExpect(jsonPath("$.error.message").value("type must be one of FIAT, CRYPTO, COMMODITY"));
 
 		verify(rateQueryService, never()).listCurrentRates(any(), any(), any(), any());
 	}
@@ -111,7 +111,7 @@ class RateControllerTest {
 		mockMvc.perform(get("/api/v1/rates/{base}/{quote}/history", "USD", "INR")
 						.param("from", "not-an-instant"))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.detail").value("from and to must be ISO-8601 timestamps"));
+				.andExpect(jsonPath("$.error.message").value("from and to must be ISO-8601 timestamps"));
 	}
 
 	@Test
@@ -123,8 +123,8 @@ class RateControllerTest {
 						.param("from", "2026-10-12T00:00:00Z")
 						.param("to", "2026-10-01T00:00:00Z"))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("INVALID_RATE_HISTORY_RANGE"))
-				.andExpect(jsonPath("$.detail").value("from must be earlier than to"));
+				.andExpect(jsonPath("$.error.code").value("INVALID_RATE_HISTORY_RANGE"))
+				.andExpect(jsonPath("$.error.message").value("from must be earlier than to"));
 	}
 
 	@Test
@@ -157,8 +157,8 @@ class RateControllerTest {
 
 		mockMvc.perform(get("/api/v1/rates/{base}/{quote}", "USD", "INR"))
 				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.code").value("RATE_NOT_AVAILABLE"))
-				.andExpect(jsonPath("$.detail").value("Rate not available for pair: USD/INR"));
+				.andExpect(jsonPath("$.error.code").value("RATE_NOT_AVAILABLE"))
+				.andExpect(jsonPath("$.error.message").value("Rate not available for pair: USD/INR"));
 	}
 
 	@Test
@@ -168,8 +168,8 @@ class RateControllerTest {
 
 		mockMvc.perform(get("/api/v1/rates/{base}/{quote}", "AAA", "BBB"))
 				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.code").value("UNSUPPORTED_PAIR"))
-				.andExpect(jsonPath("$.detail").value("Unsupported pair: AAA/BBB"));
+				.andExpect(jsonPath("$.error.code").value("UNSUPPORTED_PAIR"))
+				.andExpect(jsonPath("$.error.message").value("Unsupported pair: AAA/BBB"));
 	}
 
 	@Test

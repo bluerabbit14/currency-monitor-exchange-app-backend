@@ -1,7 +1,6 @@
 package com.example.currency.user.service;
 
 import com.example.currency.auth.exception.InvalidAccessTokenException;
-import com.example.currency.auth.repository.RefreshSessionRepository;
 import com.example.currency.user.dto.UpdateUserProfileRequest;
 import com.example.currency.user.dto.UserProfileResponse;
 import com.example.currency.user.entity.User;
@@ -21,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -33,14 +31,11 @@ class UserProfileServiceTest {
 	@Mock
 	private UserRepository userRepository;
 
-	@Mock
-	private RefreshSessionRepository refreshSessionRepository;
-
 	private UserProfileService userProfileService;
 
 	@BeforeEach
 	void setUp() {
-		userProfileService = new UserProfileService(userRepository, refreshSessionRepository);
+		userProfileService = new UserProfileService(userRepository);
 		lenient().when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 	}
 
@@ -91,18 +86,6 @@ class UserProfileServiceTest {
 	}
 
 	@Test
-	void deleteMarksTheUserDeletedAndRevokesSessions() {
-		User user = activeUser();
-		when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
-
-		userProfileService.deleteProfile(user.getId());
-
-		assertEquals(UserStatus.DELETED, user.getStatus());
-		verify(userRepository).save(user);
-		verify(refreshSessionRepository).revokeActiveByUserId(eq(user.getId()), any(Instant.class));
-	}
-
-	@Test
 	void rejectsInactiveUser() {
 		User user = activeUser();
 		user.setStatus(UserStatus.SUSPENDED);
@@ -110,7 +93,6 @@ class UserProfileServiceTest {
 
 		assertThrows(InvalidAccessTokenException.class, () -> userProfileService.getProfile(user.getId()));
 		verify(userRepository, never()).save(any());
-		verify(refreshSessionRepository, never()).revokeActiveByUserId(any(), any());
 	}
 
 	private static User activeUser() {

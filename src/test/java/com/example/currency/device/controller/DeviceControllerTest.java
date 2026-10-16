@@ -68,12 +68,12 @@ class DeviceControllerTest {
 								}
 								"""))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.id").value(deviceId.toString()))
-				.andExpect(jsonPath("$.platform").value("ANDROID"))
-				.andExpect(jsonPath("$.deviceName").value("My Android Phone"))
-				.andExpect(jsonPath("$.isActive").value(true))
-				.andExpect(jsonPath("$.fcmToken").doesNotExist())
-				.andExpect(jsonPath("$.deviceToken").doesNotExist());
+				.andExpect(jsonPath("$.body.id").value(deviceId.toString()))
+				.andExpect(jsonPath("$.body.platform").value("ANDROID"))
+				.andExpect(jsonPath("$.body.deviceName").value("My Android Phone"))
+				.andExpect(jsonPath("$.body.isActive").value(true))
+				.andExpect(jsonPath("$.body.fcmToken").doesNotExist())
+				.andExpect(jsonPath("$.body.deviceToken").doesNotExist());
 
 		verify(deviceService).register(eq(userId), any(RegisterDeviceRequest.class));
 	}
@@ -92,7 +92,7 @@ class DeviceControllerTest {
 								}
 								"""))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.title").value("Bad Request"));
+				.andExpect(jsonPath("$.error.title").value("Bad Request"));
 
 		verify(deviceService, never()).register(any(), any());
 	}
@@ -114,7 +114,7 @@ class DeviceControllerTest {
 								}
 								"""))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.detail").value("platform must be ANDROID"));
+				.andExpect(jsonPath("$.error.message").value("platform must be ANDROID"));
 	}
 
 	@Test
@@ -127,9 +127,9 @@ class DeviceControllerTest {
 		mockMvc.perform(get("/api/v1/users/me/devices")
 						.header(HttpHeaders.AUTHORIZATION, AUTH))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$[0].id").value(deviceId.toString()))
-				.andExpect(jsonPath("$[0].fcmToken").doesNotExist())
-				.andExpect(jsonPath("$[0].deviceToken").doesNotExist());
+				.andExpect(jsonPath("$.body[0].id").value(deviceId.toString()))
+				.andExpect(jsonPath("$.body[0].fcmToken").doesNotExist())
+				.andExpect(jsonPath("$.body[0].deviceToken").doesNotExist());
 
 		verify(deviceService).list(userId);
 	}
@@ -154,8 +154,8 @@ class DeviceControllerTest {
 								}
 								"""))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.deviceName").value("Kitchen tablet"))
-				.andExpect(jsonPath("$.fcmToken").doesNotExist());
+				.andExpect(jsonPath("$.body.deviceName").value("Kitchen tablet"))
+				.andExpect(jsonPath("$.body.fcmToken").doesNotExist());
 
 		verify(deviceService).update(eq(userId), eq(deviceId), eq(new UpdateDeviceRequest("Kitchen tablet")));
 	}
@@ -173,7 +173,7 @@ class DeviceControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"deviceName\":\"Nope\"}"))
 				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.detail").value("Device not found"));
+				.andExpect(jsonPath("$.error.message").value("Device not found"));
 	}
 
 	@Test
@@ -204,8 +204,8 @@ class DeviceControllerTest {
 
 		mockMvc.perform(get("/api/v1/users/me/devices"))
 				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.title").value("Unauthorized"))
-				.andExpect(jsonPath("$.detail").value("Invalid or expired access token"));
+				.andExpect(jsonPath("$.error.title").value("Unauthorized"))
+				.andExpect(jsonPath("$.error.message").value("Invalid or expired access token"));
 
 		verify(deviceService, never()).list(any());
 	}

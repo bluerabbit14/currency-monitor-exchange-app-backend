@@ -53,10 +53,10 @@ class NotificationPreferenceControllerTest {
 
 		mockMvc.perform(get(BASE).header(HttpHeaders.AUTHORIZATION, AUTH))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.pushEnabled").value(true))
-				.andExpect(jsonPath("$.inAppEnabled").value(true))
-				.andExpect(jsonPath("$.emailEnabled").value(false))
-				.andExpect(jsonPath("$.createdAt").value("2026-10-12T04:00:00Z"));
+				.andExpect(jsonPath("$.body.pushEnabled").value(true))
+				.andExpect(jsonPath("$.body.inAppEnabled").value(true))
+				.andExpect(jsonPath("$.body.emailEnabled").value(false))
+				.andExpect(jsonPath("$.body.createdAt").value("2026-10-12T04:00:00Z"));
 
 		verify(preferenceService).getOrCreate(userId);
 	}
@@ -75,7 +75,7 @@ class NotificationPreferenceControllerTest {
 								{"emailEnabled": true}
 								"""))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.emailEnabled").value(true));
+				.andExpect(jsonPath("$.body.emailEnabled").value(true));
 
 		verify(preferenceService).update(eq(userId), any(UpdateNotificationPreferenceRequest.class));
 	}
@@ -94,9 +94,9 @@ class NotificationPreferenceControllerTest {
 								{"pushEnabled": false, "inAppEnabled": true, "emailEnabled": false}
 								"""))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.pushEnabled").value(false))
-				.andExpect(jsonPath("$.inAppEnabled").value(true))
-				.andExpect(jsonPath("$.emailEnabled").value(false));
+				.andExpect(jsonPath("$.body.pushEnabled").value(false))
+				.andExpect(jsonPath("$.body.inAppEnabled").value(true))
+				.andExpect(jsonPath("$.body.emailEnabled").value(false));
 	}
 
 	@Test
@@ -111,10 +111,10 @@ class NotificationPreferenceControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{}"))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.title").value("Bad Request"))
-				.andExpect(jsonPath("$.detail").value("Validation failed"))
-				.andExpect(jsonPath("$.errors[0].field").value("request"))
-				.andExpect(jsonPath("$.errors[0].message")
+				.andExpect(jsonPath("$.error.title").value("Bad Request"))
+				.andExpect(jsonPath("$.error.message").value("Validation failed"))
+				.andExpect(jsonPath("$.error.details[0].field").value("request"))
+				.andExpect(jsonPath("$.error.details[0].message")
 						.value("At least one preference field must be provided"));
 	}
 
@@ -132,7 +132,7 @@ class NotificationPreferenceControllerTest {
 								{"pushEnabled": null, "inAppEnabled": null, "emailEnabled": null}
 								"""))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.errors[0].field").value("request"));
+				.andExpect(jsonPath("$.error.details[0].field").value("request"));
 	}
 
 	@Test
@@ -141,8 +141,8 @@ class NotificationPreferenceControllerTest {
 
 		mockMvc.perform(get(BASE))
 				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.title").value("Unauthorized"))
-				.andExpect(jsonPath("$.detail").value("Invalid or expired access token"));
+				.andExpect(jsonPath("$.error.title").value("Unauthorized"))
+				.andExpect(jsonPath("$.error.message").value("Invalid or expired access token"));
 
 		verify(preferenceService, never()).getOrCreate(any());
 	}

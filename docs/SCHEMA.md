@@ -8,7 +8,7 @@ so every mapped entity must match the schema. Tables without an entity yet are m
 ```
 users ─┬─ user_auth_providers     (GOOGLE | APPLE | EMAIL | PHONE)
        ├─ refresh_sessions        (hashed tokens, revocable, ip/user_agent)
-       ├─ otp_verifications
+       ├─ system_logs             (append-only event trail: email / push / in-app / sms; user_id SET NULL)
        ├─ user_devices            (push tokens)
        ├─ notification_preferences
        ├─ user_favorites ──► assets
@@ -78,4 +78,4 @@ These numbers are placeholders. Decide real limits before launch.
 - `user_devices.device_token` is globally unique. `DeviceService` must upsert and re-parent a token to the new user on login.
 - `AlertStatus` and `AlertCondition` enums in code do not yet include `PAUSED`/`EXPIRED`/alert type/recurrence added to the DB.
 - `rate_history`: partition by month and add a retention job once ingestion is live.
-- Add a purge job for expired `otp_verifications` and `refresh_sessions`.
+- OTPs and pending registrations live in Redis (key TTL = expiry), so no purge job is needed. Add one for expired `refresh_sessions`, and a retention job for `system_logs`.
