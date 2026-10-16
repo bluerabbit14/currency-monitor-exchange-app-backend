@@ -1,6 +1,7 @@
 package com.example.currency.user.service;
 
 import com.example.currency.auth.exception.InvalidAccessTokenException;
+import com.example.currency.auth.repository.RefreshSessionRepository;
 import com.example.currency.user.dto.UpdateUserProfileRequest;
 import com.example.currency.user.dto.UserProfileResponse;
 import com.example.currency.user.entity.User;
@@ -31,11 +32,14 @@ class UserProfileServiceTest {
 	@Mock
 	private UserRepository userRepository;
 
+	@Mock
+	private RefreshSessionRepository refreshSessionRepository;
+
 	private UserProfileService userProfileService;
 
 	@BeforeEach
 	void setUp() {
-		userProfileService = new UserProfileService(userRepository);
+		userProfileService = new UserProfileService(userRepository, refreshSessionRepository);
 		lenient().when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 	}
 
