@@ -56,7 +56,7 @@ provider failing never blocks the others.
 
 Candidates to evaluate: Twelve Data itself (supports XAU/USD, XAG/USD on paid plans, which would avoid a
 third vendor), a metals-specific API, or a commodities API. Decision criteria: licence allows redistribution
-in a consumer app, update frequency, symbol coverage (oil, gas, etc.), price. Until then GOLD/SILVER pairs have
+in a consumer app, update frequency, symbol coverage (oil, gas, etc.), price. Until then the commodity pairs (XAU, XAG, XPT, XPD, HG against USD) have
 `provider_code = NULL` and the collector skips them. API will report them as "no rate available".
 
 ### Licensing check (do before launch)
@@ -143,4 +143,4 @@ Gate with `percent_alerts` and `repeating_alerts` entitlements.
 5. Alert evaluator, outbox dispatcher, FCM.
 6. Entitlements, then store webhooks.
 7. OIDC (Google, Apple), then phone OTP.
-8. Commodity provider decision, populate `provider_code` for GOLD/SILVER.
+8. Commodity provider decision, populate `provider_code` for the commodity pairs (XAU, XAG, XPT, XPD, HG).

@@ -67,7 +67,7 @@ class RateQueryServiceDerivedTest {
 	private final Asset inr = asset("INR", AssetType.FIAT, 2);
 	private final Asset eur = asset("EUR", AssetType.FIAT, 2);
 	private final Asset btc = asset("BTC", AssetType.CRYPTO, 8);
-	private final Asset gold = asset("GOLD", AssetType.COMMODITY, 2);
+	private final Asset gold = asset("XAU", AssetType.COMMODITY, 2);
 
 	@BeforeEach
 	void setUp() {
@@ -140,7 +140,7 @@ class RateQueryServiceDerivedTest {
 		givenPair(eur, usd, "1.25", FRESH);
 		givenPair(usd, inr, "90", FRESH);
 
-		assertThrows(UnsupportedPairException.class, () -> service.getCurrentRate("GOLD", "INR"));
+		assertThrows(UnsupportedPairException.class, () -> service.getCurrentRate("XAU", "INR"));
 		assertThrows(UnsupportedPairException.class, () -> service.getCurrentRate("BTC", "BTC"));
 		// A crypto asset is not a fiat quote even if a USD pair for it exists.
 		givenPair(btc, usd, "100000", FRESH);

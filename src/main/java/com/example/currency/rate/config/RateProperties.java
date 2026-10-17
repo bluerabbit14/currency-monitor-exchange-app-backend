@@ -23,6 +23,12 @@ public class RateProperties {
 		return coingecko;
 	}
 
+	private final GoldApi goldapi = new GoldApi();
+
+	public GoldApi getGoldapi() {
+		return goldapi;
+	}
+
 	public Duration getStaleAfter() {
 		return staleAfter;
 	}
@@ -279,6 +285,131 @@ public class RateProperties {
 
 		public void setMonthlyRequestLimit(int monthlyRequestLimit) {
 			this.monthlyRequestLimit = monthlyRequestLimit;
+		}
+
+		public Duration getRateLimitBackoff() {
+			return rateLimitBackoff;
+		}
+
+		public void setRateLimitBackoff(Duration rateLimitBackoff) {
+			this.rateLimitBackoff = rateLimitBackoff;
+		}
+
+	}
+
+	public static class GoldApi {
+
+		/**
+		 * Master switch for the Gold API (commodity) scheduler. Off by default. No API key is needed for prices.
+		 */
+		private boolean enabled = false;
+
+		/**
+		 * Delay between the end of one run and the start of the next.
+		 */
+		private Duration interval = Duration.ofMinutes(10);
+
+		private Duration initialDelay = Duration.ofSeconds(60);
+
+		private String baseUrl = "https://api.gold-api.com";
+
+		private Duration connectTimeout = Duration.ofSeconds(3);
+
+		private Duration readTimeout = Duration.ofSeconds(10);
+
+		/**
+		 * Local ceiling on requests per minute, enforced by spacing requests (one per commodity). Applies to this
+		 * instance only.
+		 */
+		private int requestsPerMinute = 6;
+
+		/**
+		 * Local ceiling on requests in any rolling hour (the plan limit is 10 an hour). The collector fetches only
+		 * what fits and rotates through the commodities, so with four of them each is refreshed about every 24
+		 * minutes. In memory, per instance: it resets on restart and is not shared between instances. Zero disables it.
+		 */
+		private int requestsPerHour = 10;
+
+		/**
+		 * Read from the environment (GOLDAPI_API_KEY) and sent as the x-api-key header when set. Never logged.
+		 */
+		private String apiKey;
+
+		/**
+		 * How long to stop calling the provider after a 429 that carries no usable Retry-After header.
+		 */
+		private Duration rateLimitBackoff = Duration.ofMinutes(2);
+
+		public boolean isEnabled() {
+			return enabled;
+		}
+
+		public void setEnabled(boolean enabled) {
+			this.enabled = enabled;
+		}
+
+		public Duration getInterval() {
+			return interval;
+		}
+
+		public void setInterval(Duration interval) {
+			this.interval = interval;
+		}
+
+		public Duration getInitialDelay() {
+			return initialDelay;
+		}
+
+		public void setInitialDelay(Duration initialDelay) {
+			this.initialDelay = initialDelay;
+		}
+
+		public String getBaseUrl() {
+			return baseUrl;
+		}
+
+		public void setBaseUrl(String baseUrl) {
+			this.baseUrl = baseUrl;
+		}
+
+		public Duration getConnectTimeout() {
+			return connectTimeout;
+		}
+
+		public void setConnectTimeout(Duration connectTimeout) {
+			this.connectTimeout = connectTimeout;
+		}
+
+		public Duration getReadTimeout() {
+			return readTimeout;
+		}
+
+		public void setReadTimeout(Duration readTimeout) {
+			this.readTimeout = readTimeout;
+		}
+
+		public int getRequestsPerMinute() {
+			return requestsPerMinute;
+		}
+
+		public void setRequestsPerMinute(int requestsPerMinute) {
+			this.requestsPerMinute = requestsPerMinute;
+		}
+
+		public int getRequestsPerHour() {
+			return requestsPerHour;
+		}
+
+		public void setRequestsPerHour(int requestsPerHour) {
+			this.requestsPerHour = requestsPerHour;
+		}
+
+		public String getApiKey() {
+			return apiKey;
+		}
+
+		public void setApiKey(String apiKey) {
+			this.apiKey = apiKey;
 		}
 
 		public Duration getRateLimitBackoff() {

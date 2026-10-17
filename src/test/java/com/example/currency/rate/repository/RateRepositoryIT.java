@@ -54,7 +54,7 @@ class RateRepositoryIT {
 
 	@Test
 	void seedsConfiguredPairsWithoutRates() {
-		assertEquals(8, assetPairRepository.count());
+		assertEquals(21, assetPairRepository.count());
 		assertEquals(0, exchangeRateRepository.count());
 		assertEquals(0, rateHistoryRepository.count());
 		assertTrue(assetPairRepository.findByStatusAndSymbols(AssetStatus.ACTIVE, "BTC", "USD").isPresent());
@@ -114,7 +114,7 @@ class RateRepositoryIT {
 
 	@Test
 	void enforcesProviderObservationDedupAndHistoryQuery() {
-		AssetPair pair = assetPairRepository.findByStatusAndSymbols(AssetStatus.ACTIVE, "GOLD", "USD").orElseThrow();
+		AssetPair pair = assetPairRepository.findByStatusAndSymbols(AssetStatus.ACTIVE, "XAU", "USD").orElseThrow();
 		Instant first = Instant.parse("2026-10-10T10:00:00Z");
 		Instant second = Instant.parse("2026-10-11T10:00:00Z");
 		saveHistory(pair, "2400", first, "obs-1");

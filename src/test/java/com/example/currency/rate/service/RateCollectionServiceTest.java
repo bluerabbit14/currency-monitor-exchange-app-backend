@@ -105,7 +105,7 @@ class RateCollectionServiceTest {
 	@Test
 	void doesNotFetchUnmappedUnknownProviderOrBlankCodePairs() {
 		when(assetPairRepository.findByStatus(AssetStatus.ACTIVE)).thenReturn(List.of(
-				pair("GOLD/USD", null, null),
+				pair("XAU/USD", null, null),
 				pair("SILVER/USD", " ", null),
 				pair("BTC/USD", "COINGECKO", "bitcoin:usd"),
 				pair("GBP/USD", "TWELVEDATA", " "),

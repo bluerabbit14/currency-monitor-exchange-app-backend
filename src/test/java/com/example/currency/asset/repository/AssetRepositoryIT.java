@@ -18,6 +18,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,37 +50,34 @@ class AssetRepositoryIT {
 	void seedsTheSupportedCatalog() {
 		List<Asset> assets = active(null, null);
 
-		assertEquals(11, assets.size());
-		assertEquals(List.of(
-				"BNB",
-				"Bitcoin",
-				"British Pound",
-				"Ethereum",
-				"Euro",
-				"Gold",
-				"Indian Rupee",
-				"Japanese Yen",
-				"Silver",
-				"Solana",
-				"US Dollar"), assets.stream().map(Asset::getName).toList());
+		assertEquals(22, assets.size());
+		assertEquals(Set.of(
+				"USD", "EUR", "GBP", "INR", "JPY", "CNY", "AED",
+				"BTC", "ETH", "USDT", "BNB", "SOL", "XRP", "USDC", "DOGE", "ADA", "TRX",
+				"XAU", "XAG", "XPT", "XPD", "HG"), Set.copyOf(symbols(null, null)));
 		Asset usd = assets.stream().filter(asset -> asset.getSymbol().equals("USD")).findFirst().orElseThrow();
 		assertNull(usd.getProvider());
 		assertNull(usd.getExternalId());
 		assertEquals(AssetStatus.ACTIVE, usd.getStatus());
+		Asset tether = assets.stream().filter(asset -> asset.getSymbol().equals("USDT")).findFirst().orElseThrow();
+		assertEquals("COINGECKO", tether.getProvider());
+		assertEquals("tether", tether.getExternalId());
 	}
 
 	@Test
 	void filtersEachCategory() {
-		assertEquals(List.of("GBP", "EUR", "INR", "JPY", "USD"), symbols(AssetType.FIAT, null));
-		assertEquals(List.of("BNB", "BTC", "ETH", "SOL"), symbols(AssetType.CRYPTO, null));
-		assertEquals(List.of("GOLD", "SILVER"), symbols(AssetType.COMMODITY, null));
+		assertEquals(Set.of("USD", "EUR", "GBP", "INR", "JPY", "CNY", "AED"), Set.copyOf(symbols(AssetType.FIAT, null)));
+		assertEquals(Set.of("BTC", "ETH", "USDT", "BNB", "SOL", "XRP", "USDC", "DOGE", "ADA", "TRX"),
+				Set.copyOf(symbols(AssetType.CRYPTO, null)));
+		assertEquals(Set.of("XAU", "XAG", "XPT", "XPD", "HG"), Set.copyOf(symbols(AssetType.COMMODITY, null)));
 	}
 
 	@Test
 	void searchesSymbolAndNameIgnoringCase() {
-		assertEquals(List.of("USD"), symbols(null, "usd"));
+		assertEquals(Set.of("USD", "USDT", "USDC"), Set.copyOf(symbols(null, "usd")));
 		assertEquals(List.of("BTC"), symbols(null, "bitcoin"));
-		assertEquals(List.of("BTC", "GBP"), symbols(null, "BIT"));
+		assertEquals(Set.of("BTC", "GBP"), Set.copyOf(symbols(null, "BIT")));
+		assertEquals(List.of("XAU"), symbols(null, "gold"));
 	}
 
 	@Test
@@ -89,11 +87,11 @@ class AssetRepositoryIT {
 
 	@Test
 	void excludesInactiveAssets() {
-		Asset inactive = crypto("DOGE", "Dogecoin", AssetStatus.INACTIVE, null, null);
+		Asset inactive = crypto("XBT9", "Inactive Coin", AssetStatus.INACTIVE, null, null);
 		assetRepository.saveAndFlush(inactive);
 
-		assertEquals(11, active(null, null).size());
-		assertTrue(symbols(null, null).stream().noneMatch("DOGE"::equals));
+		assertEquals(22, active(null, null).size());
+		assertTrue(symbols(null, null).stream().noneMatch("XBT9"::equals));
 		assertTrue(assetRepository.findByIdAndStatus(inactive.getId(), AssetStatus.ACTIVE).isEmpty());
 		assertTrue(assetRepository.findByIdAndStatus(UUID.randomUUID(), AssetStatus.ACTIVE).isEmpty());
 	}
@@ -108,7 +106,7 @@ class AssetRepositoryIT {
 	}
 
 	private List<Asset> active(AssetType type, String search) {
-		return assetRepository.findActive(type, search, PageRequest.of(0, 20, Sort.by("name"))).getContent();
+		return assetRepository.findActive(type, search, PageRequest.of(0, 50, Sort.by("name"))).getContent();
 	}
 
 	private List<String> symbols(AssetType type, String search) {

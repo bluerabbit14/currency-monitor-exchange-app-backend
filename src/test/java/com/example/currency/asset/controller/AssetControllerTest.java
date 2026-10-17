@@ -82,11 +82,11 @@ class AssetControllerTest {
 	@Test
 	void filtersCommodity() throws Exception {
 		when(assetService.listActive(eq(AssetType.COMMODITY), isNull(), any(Pageable.class)))
-				.thenReturn(new PageImpl<>(List.of(response("GOLD", "Gold", AssetType.COMMODITY))));
+				.thenReturn(new PageImpl<>(List.of(response("XAU", "Gold", AssetType.COMMODITY))));
 
 		mockMvc.perform(get("/api/v1/assets").param("type", "COMMODITY"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.body.content[0].symbol").value("GOLD"))
+				.andExpect(jsonPath("$.body.content[0].symbol").value("XAU"))
 				.andExpect(jsonPath("$.body.content[0].type").value("COMMODITY"));
 	}
 

@@ -41,7 +41,7 @@ asset_pairs (base, quote) ─┬─ exchange_rates   latest rate, 1 row per pair
 |---|---|---|---|---|
 | FIAT/FIAT | Twelve Data | `TWELVEDATA` | `BASE/QUOTE` | `USD/INR` |
 | CRYPTO/FIAT | CoinGecko | `COINGECKO` | `<coingecko id>:<vs currency>` | `bitcoin:usd` |
-| COMMODITY | undecided | NULL | NULL | GOLD, SILVER |
+| COMMODITY | undecided | NULL | NULL | XAU, XAG, XPT, XPD, HG (no provider mapped yet) |
 
 ## Entitlement keys (seeded)
 
