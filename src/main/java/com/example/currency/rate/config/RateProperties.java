@@ -47,10 +47,10 @@ public class RateProperties {
 		private boolean enabled = false;
 
 		/**
-		 * Delay between the end of one run and the start of the next. The default of six minutes keeps three
+		 * Delay between the end of one run and the start of the next. The default of twelve minutes keeps six
 		 * Twelve Data pairs near 720 credits a day, inside the free plan's 800.
 		 */
-		private Duration interval = Duration.ofMinutes(6);
+		private Duration interval = Duration.ofMinutes(12);
 
 		private Duration initialDelay = Duration.ofSeconds(30);
 

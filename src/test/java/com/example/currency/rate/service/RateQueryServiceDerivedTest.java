@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -133,19 +134,99 @@ class RateQueryServiceDerivedTest {
 	}
 
 	@Test
-	void onlyCryptoBasesWithAFiatQuoteAreDerived() {
+	void commoditiesCryptoQuotesAndSameAssetAreNotDerived() {
 		givenPair(btc, usd, "100000", FRESH);
 		givenPair(gold, usd, "2000", FRESH);
 		givenPair(eur, usd, "1.25", FRESH);
 		givenPair(usd, inr, "90", FRESH);
 
 		assertThrows(UnsupportedPairException.class, () -> service.getCurrentRate("GOLD", "INR"));
-		assertThrows(UnsupportedPairException.class, () -> service.getCurrentRate("EUR", "INR"));
 		assertThrows(UnsupportedPairException.class, () -> service.getCurrentRate("BTC", "BTC"));
 		// A crypto asset is not a fiat quote even if a USD pair for it exists.
 		givenPair(btc, usd, "100000", FRESH);
 		givenPair(asset("ETH", AssetType.CRYPTO, 8), usd, "3000", FRESH);
 		assertThrows(UnsupportedPairException.class, () -> service.getCurrentRate("BTC", "ETH"));
+	}
+
+	@Test
+	void derivesFiatCrossPairsFromTheirUsdLegsInEveryStoredDirection() {
+		Asset jpy = asset("JPY", AssetType.FIAT, 0);
+		Asset aed = asset("AED", AssetType.FIAT, 2);
+		givenPair(eur, usd, "1.25", FRESH);        // EUR/USD: 1 EUR = 1.25 USD
+		givenPair(usd, inr, "90", FRESH);          // USD/INR: 1 USD = 90 INR
+		givenPair(usd, jpy, "150", FRESH);         // USD/JPY: 1 USD = 150 JPY
+		givenPair(usd, aed, "3.6725", FRESH);      // USD/AED
+
+		// EUR/USD x USD/INR: both legs, mixed directions.
+		assertEquals(new BigDecimal("112.50"), service.getCurrentRate("EUR", "INR").rate());
+		// USD/INR stored, INR/USD requested: base INR (units per USD), quote USD.
+		assertEquals(new BigDecimal("0.01"), service.getCurrentRate("INR", "USD").rate());
+		// Two units-per-USD legs: INR -> JPY at the JPY scale of 0.
+		assertEquals(new BigDecimal("2"), service.getCurrentRate("INR", "JPY").rate());
+		assertEquals(new BigDecimal("24.51"), service.getCurrentRate("AED", "INR").rate());
+		// EUR as a quote: USD/EUR is not stored (EUR/USD is), base USD needs only the quote leg.
+		assertEquals(new BigDecimal("0.80"), service.getCurrentRate("USD", "EUR").rate());
+		assertEquals(new BigDecimal("1.25"), service.getCurrentRate("EUR", "USD").rate());
+	}
+
+	@Test
+	void fiatCrossPairsAreOnlyAsFreshAsTheirOldestLegAndNameBothProviders() {
+		Instant oldFx = NOW.minus(Duration.ofHours(2));
+		givenPair(eur, usd, "1.25", FRESH);
+		givenPair(usd, inr, "90", oldFx);
+
+		RateResponse response = service.getCurrentRate("EUR", "INR");
+
+		assertTrue(response.stale());
+		assertEquals(oldFx, response.observedAt());
+		assertEquals("TWELVEDATA", response.providerCode());
+	}
+
+	@Test
+	void unknownOrIdenticalFiatCrossPairsAreUnsupported() {
+		givenPair(eur, usd, "1.25", FRESH);
+		givenPair(usd, inr, "90", FRESH);
+
+		assertThrows(UnsupportedPairException.class, () -> service.getCurrentRate("EUR", "CHF"));
+		assertThrows(UnsupportedPairException.class, () -> service.getCurrentRate("CHF", "EUR"));
+		assertThrows(UnsupportedPairException.class, () -> service.getCurrentRate("EUR", "EUR"));
+		assertThrows(UnsupportedPairException.class, () -> service.getCurrentRate("USD", "USD"));
+	}
+
+	@Test
+	void fiatCrossHistoryUsesTheOtherLegsRateInForceAtEachTime() {
+		AssetPair eurUsd = givenPair(eur, usd, "1", FRESH);
+		AssetPair usdInr = givenPair(usd, inr, "1", FRESH);
+		Instant t1 = Instant.parse("2026-10-12T10:00:00Z");
+		Instant t2 = Instant.parse("2026-10-12T10:20:00Z");
+		PageRequest pageable = PageRequest.of(0, 10);
+		when(rateHistoryRepository.findHistory(any(), any(), any(), any())).thenReturn(new PageImpl<>(
+				List.of(history(eurUsd, "1.30", t2), history(eurUsd, "1.25", t1)), pageable, 2));
+		when(rateHistoryRepository.findFirstByPairIdAndObservedAtLessThanEqualOrderByObservedAtDescIdDesc(
+				usdInr.getId(), t1)).thenReturn(Optional.of(history(usdInr, "80", t1.minusSeconds(60))));
+		when(rateHistoryRepository.findBetweenAscending(usdInr.getId(), t1, t2))
+				.thenReturn(List.of(history(usdInr, "90", Instant.parse("2026-10-12T10:10:00Z"))));
+
+		Page<RateHistoryResponse> result = service.getHistory("EUR", "INR", t1.minusSeconds(1), NOW, pageable);
+
+		assertEquals(List.of(new BigDecimal("117.00"), new BigDecimal("100.00")),
+				result.getContent().stream().map(RateHistoryResponse::rate).toList());
+		verify(rateHistoryRepository).findHistory(eq(eurUsd.getId()), any(), any(), any());
+	}
+
+	@Test
+	void historyOfAUsdBasedCrossPairReadsOnlyTheQuoteLeg() {
+		AssetPair eurUsd = givenPair(eur, usd, "1", FRESH);
+		Instant t1 = Instant.parse("2026-10-12T10:00:00Z");
+		PageRequest pageable = PageRequest.of(0, 10);
+		when(rateHistoryRepository.findHistory(any(), any(), any(), any())).thenReturn(new PageImpl<>(
+				List.of(history(eurUsd, "1.25", t1)), pageable, 1));
+
+		Page<RateHistoryResponse> result = service.getHistory("USD", "EUR", null, null, pageable);
+
+		assertEquals(List.of(new BigDecimal("0.80")),
+				result.getContent().stream().map(RateHistoryResponse::rate).toList());
+		verify(rateHistoryRepository, never()).findBetweenAscending(any(), any(), any());
 	}
 
 	@Test

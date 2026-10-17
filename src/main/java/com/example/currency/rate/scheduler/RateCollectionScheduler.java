@@ -25,7 +25,7 @@ public class RateCollectionScheduler {
 	}
 
 	@Scheduled(
-			fixedDelayString = "${app.rates.collection.interval:PT6M}",
+			fixedDelayString = "${app.rates.collection.interval:PT12M}",
 			initialDelayString = "${app.rates.collection.initial-delay:PT30S}")
 	public void collectRates() {
 		try {

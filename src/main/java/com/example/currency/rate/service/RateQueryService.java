@@ -79,38 +79,6 @@ public class RateQueryService {
 				.orElseThrow(() -> new RateNotAvailableException(normalizedBase, normalizedQuote));
 	}
 
-	/**
-	 * A crypto price in a fiat currency with no stored pair: the canonical CRYPTO/USD rate converted with the
-	 * stored USD-fiat rate. Both inputs are cached rows; nothing is fetched and no rate is invented.
-	 */
-	private RateResponse getDerivedRate(Derivation derivation) {
-		String base = derivation.cryptoPair().getBaseAsset().getSymbol();
-		String quote = derivation.fiat().getSymbol();
-		ExchangeRate crypto = exchangeRateRepository.findByPairIdWithAssets(derivation.cryptoPair().getId())
-				.orElseThrow(() -> new RateNotAvailableException(base, quote));
-		ExchangeRate fx = exchangeRateRepository.findByPairIdWithAssets(derivation.fxPair().getId())
-				.orElseThrow(() -> new RateNotAvailableException(base, quote));
-
-		BigDecimal converted;
-		try {
-			converted = FiatConversion.usdToFiat(
-					crypto.getRate(), fx.getRate(), derivation.fxIsQuotePerUsd(), derivation.fiat().getDecimalScale());
-		}
-		catch (IllegalArgumentException ex) {
-			throw new RateNotAvailableException(base, quote);
-		}
-		// The converted price is only as fresh as its older input.
-		Instant observedAt = earlier(crypto.getObservedAt(), fx.getObservedAt());
-		return new RateResponse(
-				base,
-				quote,
-				converted,
-				observedAt,
-				earlier(crypto.getFetchedAt(), fx.getFetchedAt()),
-				isStale(observedAt),
-				crypto.getProviderCode() + "+" + fx.getProviderCode());
-	}
-
 	public Page<RateHistoryResponse> getHistory(
 			String base,
 			String quote,
@@ -137,53 +105,104 @@ public class RateQueryService {
 	}
 
 	/**
-	 * Each canonical CRYPTO/USD observation is converted with the newest stored FX observation at or before
-	 * its own {@code observedAt}, never with today's rate. An observation older than every stored FX
-	 * observation has no rate to convert with and is left out of the page content; {@code totalElements}
-	 * still counts the underlying CRYPTO/USD observations.
+	 * A price with no stored pair: crypto or fiat base, fiat quote. Both sides are valued in USD from their
+	 * cached USD legs and divided. Both inputs are cached rows; nothing is fetched and no rate is invented.
+	 */
+	private RateResponse getDerivedRate(Derivation derivation) {
+		String base = derivation.baseSymbol();
+		String quote = derivation.quoteAsset().getSymbol();
+		ExchangeRate baseRate = derivation.base() == null ? null
+				: exchangeRateRepository.findByPairIdWithAssets(derivation.base().pair().getId())
+						.orElseThrow(() -> new RateNotAvailableException(base, quote));
+		ExchangeRate quoteRate = derivation.quote() == null ? null
+				: exchangeRateRepository.findByPairIdWithAssets(derivation.quote().pair().getId())
+						.orElseThrow(() -> new RateNotAvailableException(base, quote));
+
+		BigDecimal converted;
+		try {
+			converted = convert(derivation, baseRate == null ? null : baseRate.getRate(),
+					quoteRate == null ? null : quoteRate.getRate());
+		}
+		catch (IllegalArgumentException ex) {
+			throw new RateNotAvailableException(base, quote);
+		}
+		List<ExchangeRate> inputs = new ArrayList<>();
+		if (baseRate != null) {
+			inputs.add(baseRate);
+		}
+		if (quoteRate != null) {
+			inputs.add(quoteRate);
+		}
+		// The converted price is only as fresh as its oldest input.
+		Instant observedAt = inputs.stream().map(ExchangeRate::getObservedAt).min(Comparator.naturalOrder()).orElseThrow();
+		Instant fetchedAt = inputs.stream().map(ExchangeRate::getFetchedAt).min(Comparator.naturalOrder()).orElseThrow();
+		return new RateResponse(base, quote, converted, observedAt, fetchedAt, isStale(observedAt),
+				joinProviders(inputs.stream().map(ExchangeRate::getProviderCode).toList()));
+	}
+
+	/**
+	 * Each observation of the first available leg is converted with the newest stored observation of the other
+	 * leg at or before its own {@code observedAt}, never with today's rate. An observation older than every
+	 * stored observation of the other leg has no rate to convert with and is left out of the page content;
+	 * {@code totalElements} still counts the underlying observations.
 	 */
 	private Page<RateHistoryResponse> getDerivedHistory(
 			Derivation derivation, Instant from, Instant to, Pageable pageable) {
-		Page<RateHistory> page = rateHistoryRepository.findHistory(
-				derivation.cryptoPair().getId(), from, to, pageable);
+		boolean rowsFromBase = derivation.base() != null;
+		Leg source = rowsFromBase ? derivation.base() : derivation.quote();
+		Leg other = rowsFromBase ? derivation.quote() : null;
+
+		Page<RateHistory> page = rateHistoryRepository.findHistory(source.pair().getId(), from, to, pageable);
 		if (page.isEmpty()) {
 			return page.map(RateQueryService::toHistoryResponse);
 		}
 
-		Instant oldest = page.stream().map(RateHistory::getObservedAt).min(Comparator.naturalOrder()).orElseThrow();
-		Instant newest = page.stream().map(RateHistory::getObservedAt).max(Comparator.naturalOrder()).orElseThrow();
-		List<RateHistory> fxObservations = new ArrayList<>();
-		rateHistoryRepository.findFirstByPairIdAndObservedAtLessThanEqualOrderByObservedAtDescIdDesc(
-				derivation.fxPair().getId(), oldest).ifPresent(fxObservations::add);
-		for (RateHistory fx : rateHistoryRepository.findBetweenAscending(
-				derivation.fxPair().getId(), oldest, newest)) {
-			if (fxObservations.isEmpty() || fx.getObservedAt().isAfter(fxObservations.getLast().getObservedAt())) {
-				fxObservations.add(fx);
-			}
-			else if (fx.getObservedAt().equals(fxObservations.getLast().getObservedAt())) {
-				fxObservations.set(fxObservations.size() - 1, fx);
-			}
-		}
+		List<RateHistory> otherObservations = other == null ? List.of() : observationsCovering(other, page);
 
 		List<RateHistoryResponse> content = new ArrayList<>();
-		for (RateHistory crypto : page) {
-			RateHistory fx = newestAtOrBefore(fxObservations, crypto.getObservedAt());
-			if (fx == null) {
-				continue;
+		for (RateHistory row : page) {
+			RateHistory match = null;
+			if (other != null) {
+				match = newestAtOrBefore(otherObservations, row.getObservedAt());
+				if (match == null) {
+					continue;
+				}
 			}
 			try {
+				BigDecimal baseRate = rowsFromBase ? row.getRate() : null;
+				BigDecimal quoteRate = rowsFromBase ? (match == null ? null : match.getRate()) : row.getRate();
+				List<String> codes = new ArrayList<>(List.of(row.getProviderCode()));
+				Instant fetchedAt = row.getFetchedAt();
+				if (match != null) {
+					codes.add(match.getProviderCode());
+					fetchedAt = earlier(fetchedAt, match.getFetchedAt());
+				}
 				content.add(new RateHistoryResponse(
-						FiatConversion.usdToFiat(crypto.getRate(), fx.getRate(),
-								derivation.fxIsQuotePerUsd(), derivation.fiat().getDecimalScale()),
-						crypto.getObservedAt(),
-						earlier(crypto.getFetchedAt(), fx.getFetchedAt()),
-						crypto.getProviderCode() + "+" + fx.getProviderCode()));
+						convert(derivation, baseRate, quoteRate), row.getObservedAt(), fetchedAt, joinProviders(codes)));
 			}
 			catch (IllegalArgumentException ex) {
 				// A non-positive stored rate cannot be converted; leave the observation out.
 			}
 		}
 		return new PageImpl<>(content, pageable, page.getTotalElements());
+	}
+
+	/** The leg's observations from just before the page's oldest row to its newest row, oldest first. */
+	private List<RateHistory> observationsCovering(Leg leg, Page<RateHistory> page) {
+		Instant oldest = page.stream().map(RateHistory::getObservedAt).min(Comparator.naturalOrder()).orElseThrow();
+		Instant newest = page.stream().map(RateHistory::getObservedAt).max(Comparator.naturalOrder()).orElseThrow();
+		List<RateHistory> observations = new ArrayList<>();
+		rateHistoryRepository.findFirstByPairIdAndObservedAtLessThanEqualOrderByObservedAtDescIdDesc(
+				leg.pair().getId(), oldest).ifPresent(observations::add);
+		for (RateHistory next : rateHistoryRepository.findBetweenAscending(leg.pair().getId(), oldest, newest)) {
+			if (observations.isEmpty() || next.getObservedAt().isAfter(observations.getLast().getObservedAt())) {
+				observations.add(next);
+			}
+			else if (next.getObservedAt().equals(observations.getLast().getObservedAt())) {
+				observations.set(observations.size() - 1, next);
+			}
+		}
+		return observations;
 	}
 
 	private static RateHistory newestAtOrBefore(List<RateHistory> ascending, Instant at) {
@@ -197,35 +216,70 @@ public class RateQueryService {
 		return found;
 	}
 
+	private static BigDecimal convert(Derivation derivation, BigDecimal baseRate, BigDecimal quoteRate) {
+		return FiatConversion.cross(
+				baseRate, derivation.base() != null && derivation.base().usdPerUnit(),
+				quoteRate, derivation.quote() != null && derivation.quote().usdPerUnit(),
+				derivation.quoteAsset().getDecimalScale());
+	}
+
+	private static String joinProviders(List<String> codes) {
+		return String.join("+", codes.stream().distinct().toList());
+	}
+
 	/**
-	 * Resolves how a CRYPTO/USD price becomes a price in {@code quote}: the base must be a crypto asset with an
-	 * active {@code BASE/USD} pair, and the quote an active fiat asset with a stored FX pair against USD in
-	 * either direction ({@code USD/XXX} multiplies, {@code XXX/USD} divides). Anything else is an unsupported pair.
+	 * Resolves how {@code base/quote} can be priced from USD legs. The base is a crypto or fiat asset and the
+	 * quote a fiat asset; USD itself needs no leg. A leg is the asset's stored pair against USD in either
+	 * direction ({@code XXX/USD} is USD per unit, {@code USD/XXX} is units per USD). Anything else, including
+	 * commodities and an asset against itself, is an unsupported pair.
 	 */
 	private Derivation derivation(String base, String quote) {
-		if (USD.equals(quote)) {
+		if (base.equals(quote)) {
 			throw new UnsupportedPairException(base, quote);
 		}
-		AssetPair cryptoPair = assetPairRepository.findByStatusAndSymbols(AssetStatus.ACTIVE, base, USD)
-				.filter(pair -> pair.getBaseAsset().getAssetType() == AssetType.CRYPTO)
-				.orElseThrow(() -> new UnsupportedPairException(base, quote));
-
-		Optional<AssetPair> usdToFiat = assetPairRepository.findByStatusAndSymbols(AssetStatus.ACTIVE, USD, quote);
-		if (usdToFiat.isPresent() && usdToFiat.get().getQuoteAsset().getAssetType() == AssetType.FIAT) {
-			return new Derivation(cryptoPair, usdToFiat.get(), usdToFiat.get().getQuoteAsset(), true);
+		Leg baseLeg = leg(base, true, base, quote);
+		Leg quoteLeg = leg(quote, false, base, quote);
+		if (baseLeg == null && quoteLeg == null) {
+			throw new UnsupportedPairException(base, quote);
 		}
-		Optional<AssetPair> fiatToUsd = assetPairRepository.findByStatusAndSymbols(AssetStatus.ACTIVE, quote, USD);
-		if (fiatToUsd.isPresent() && fiatToUsd.get().getBaseAsset().getAssetType() == AssetType.FIAT) {
-			return new Derivation(cryptoPair, fiatToUsd.get(), fiatToUsd.get().getBaseAsset(), false);
+		Asset quoteAsset = quoteLeg != null ? quoteLeg.asset() : usdSide(baseLeg.pair());
+		return new Derivation(baseLeg, quoteLeg, base, quoteAsset);
+	}
+
+	/** Null for USD. */
+	private Leg leg(String symbol, boolean allowCrypto, String base, String quote) {
+		if (USD.equals(symbol)) {
+			return null;
+		}
+		Optional<AssetPair> assetUsd = assetPairRepository.findByStatusAndSymbols(AssetStatus.ACTIVE, symbol, USD);
+		if (assetUsd.isPresent() && supported(assetUsd.get().getBaseAsset(), allowCrypto)) {
+			return new Leg(assetUsd.get(), assetUsd.get().getBaseAsset(), true);
+		}
+		Optional<AssetPair> usdAsset = assetPairRepository.findByStatusAndSymbols(AssetStatus.ACTIVE, USD, symbol);
+		if (usdAsset.isPresent() && supported(usdAsset.get().getQuoteAsset(), allowCrypto)) {
+			return new Leg(usdAsset.get(), usdAsset.get().getQuoteAsset(), false);
 		}
 		throw new UnsupportedPairException(base, quote);
+	}
+
+	private static boolean supported(Asset asset, boolean allowCrypto) {
+		return asset.getAssetType() == AssetType.FIAT || (allowCrypto && asset.getAssetType() == AssetType.CRYPTO);
+	}
+
+	private static Asset usdSide(AssetPair pair) {
+		return USD.equals(pair.getQuoteAsset().getSymbol()) ? pair.getQuoteAsset() : pair.getBaseAsset();
 	}
 
 	private static Instant earlier(Instant a, Instant b) {
 		return a.isBefore(b) ? a : b;
 	}
 
-	private record Derivation(AssetPair cryptoPair, AssetPair fxPair, Asset fiat, boolean fxIsQuotePerUsd) {
+	/** A stored pair against USD for one non-USD asset; {@code usdPerUnit} is true for {@code ASSET/USD}. */
+	private record Leg(AssetPair pair, Asset asset, boolean usdPerUnit) {
+	}
+
+	/** Either leg is null when that side is USD. */
+	private record Derivation(Leg base, Leg quote, String baseSymbol, Asset quoteAsset) {
 	}
 
 	private RateResponse toRateResponse(ExchangeRate rate) {

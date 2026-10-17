@@ -37,7 +37,7 @@ class RateCollectionSchedulerTest {
 		Method method = RateCollectionScheduler.class.getMethod("collectRates");
 		Scheduled scheduled = method.getAnnotation(Scheduled.class);
 
-		assertEquals("${app.rates.collection.interval:PT6M}", scheduled.fixedDelayString());
+		assertEquals("${app.rates.collection.interval:PT12M}", scheduled.fixedDelayString());
 		assertEquals("${app.rates.collection.initial-delay:PT30S}", scheduled.initialDelayString());
 		assertEquals(-1L, scheduled.fixedRate());
 	}

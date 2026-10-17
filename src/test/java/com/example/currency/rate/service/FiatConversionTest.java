@@ -48,6 +48,31 @@ class FiatConversionTest {
 	}
 
 	@Test
+	void crossRatesDivideTheUsdValuesOfBothSides() {
+		BigDecimal eurUsd = new BigDecimal("1.25");
+		BigDecimal usdInr = new BigDecimal("90");
+		BigDecimal usdJpy = new BigDecimal("150");
+		// EUR (USD per unit) -> INR (units per USD)
+		assertEquals(new BigDecimal("112.50"), FiatConversion.cross(eurUsd, true, usdInr, false, 2));
+		// INR -> JPY, both units per USD: 150 / 90 = 1.6667
+		assertEquals(new BigDecimal("1.67"), FiatConversion.cross(usdInr, false, usdJpy, false, 2));
+		// Base is USD (no leg), quote INR / base INR, quote USD (no leg)
+		assertEquals(new BigDecimal("90.00"), FiatConversion.cross(null, true, usdInr, false, 2));
+		assertEquals(new BigDecimal("0.0111"), FiatConversion.cross(usdInr, false, null, true, 4));
+		// Round-trip stays consistent: EUR->INR times INR->EUR is 1.
+		BigDecimal there = FiatConversion.cross(eurUsd, true, usdInr, false, 12);
+		BigDecimal back = FiatConversion.cross(usdInr, false, eurUsd, true, 12);
+		assertEquals(0, new BigDecimal("1").compareTo(there.multiply(back).setScale(6, java.math.RoundingMode.HALF_UP)));
+	}
+
+	@Test
+	void crossRejectsNonPositiveLegs() {
+		BigDecimal ten = BigDecimal.TEN;
+		assertThrows(IllegalArgumentException.class, () -> FiatConversion.cross(ten, true, BigDecimal.ZERO, false, 2));
+		assertThrows(IllegalArgumentException.class, () -> FiatConversion.cross(new BigDecimal("-1"), true, ten, false, 2));
+	}
+
+	@Test
 	void rejectsMissingZeroAndNegativeInputsInsteadOfReturningZero() {
 		BigDecimal ten = BigDecimal.TEN;
 		assertThrows(IllegalArgumentException.class, () -> FiatConversion.usdToFiat(ten, BigDecimal.ZERO, false, 2));
