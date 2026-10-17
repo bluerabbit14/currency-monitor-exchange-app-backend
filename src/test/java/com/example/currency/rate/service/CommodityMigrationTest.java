@@ -41,6 +41,25 @@ class CommodityMigrationTest {
 		assertFalse(sql.contains("DELETE "));
 	}
 
+	@Test
+	void v20RemovesCopperSafelyAndOnlyCopper() {
+		String removal = read("/db/migration/V20__remove_copper_asset.sql");
+
+		assertTrue(removal.contains("a.symbol = 'HG' AND a.asset_type = 'COMMODITY'"));
+		assertTrue(removal.contains("DELETE FROM asset_pairs"));
+		assertTrue(removal.contains("DELETE FROM assets"));
+		for (String dependent : new String[] {"exchange_rates", "rate_history", "rate_candles", "price_alerts",
+				"user_favorites", "users"}) {
+			assertTrue(removal.contains("FROM " + dependent), dependent + " must be checked before deleting");
+		}
+		assertTrue(removal.contains("SET status = 'INACTIVE'"), "referenced rows are deactivated, not deleted");
+		for (String other : new String[] {"'XAU'", "'XAG'", "'XPT'", "'XPD'", "'USD'"}) {
+			assertFalse(removal.contains(other), "must not touch " + other);
+		}
+		assertFalse(removal.contains("DROP "));
+		assertFalse(removal.contains("TRUNCATE"));
+	}
+
 	private static String read(String path) {
 		try (InputStream in = CommodityMigrationTest.class.getResourceAsStream(path)) {
 			return new String(in.readAllBytes(), StandardCharsets.UTF_8);

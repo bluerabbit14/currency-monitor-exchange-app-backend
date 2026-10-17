@@ -50,11 +50,11 @@ class AssetRepositoryIT {
 	void seedsTheSupportedCatalog() {
 		List<Asset> assets = active(null, null);
 
-		assertEquals(22, assets.size());
+		assertEquals(21, assets.size());
 		assertEquals(Set.of(
 				"USD", "EUR", "GBP", "INR", "JPY", "CNY", "AED",
 				"BTC", "ETH", "USDT", "BNB", "SOL", "XRP", "USDC", "DOGE", "ADA", "TRX",
-				"XAU", "XAG", "XPT", "XPD", "HG"), Set.copyOf(symbols(null, null)));
+				"XAU", "XAG", "XPT", "XPD"), Set.copyOf(symbols(null, null)));
 		Asset usd = assets.stream().filter(asset -> asset.getSymbol().equals("USD")).findFirst().orElseThrow();
 		assertNull(usd.getProvider());
 		assertNull(usd.getExternalId());
@@ -69,7 +69,7 @@ class AssetRepositoryIT {
 		assertEquals(Set.of("USD", "EUR", "GBP", "INR", "JPY", "CNY", "AED"), Set.copyOf(symbols(AssetType.FIAT, null)));
 		assertEquals(Set.of("BTC", "ETH", "USDT", "BNB", "SOL", "XRP", "USDC", "DOGE", "ADA", "TRX"),
 				Set.copyOf(symbols(AssetType.CRYPTO, null)));
-		assertEquals(Set.of("XAU", "XAG", "XPT", "XPD", "HG"), Set.copyOf(symbols(AssetType.COMMODITY, null)));
+		assertEquals(Set.of("XAU", "XAG", "XPT", "XPD"), Set.copyOf(symbols(AssetType.COMMODITY, null)));
 	}
 
 	@Test
@@ -90,7 +90,7 @@ class AssetRepositoryIT {
 		Asset inactive = crypto("XBT9", "Inactive Coin", AssetStatus.INACTIVE, null, null);
 		assetRepository.saveAndFlush(inactive);
 
-		assertEquals(22, active(null, null).size());
+		assertEquals(21, active(null, null).size());
 		assertTrue(symbols(null, null).stream().noneMatch("XBT9"::equals));
 		assertTrue(assetRepository.findByIdAndStatus(inactive.getId(), AssetStatus.ACTIVE).isEmpty());
 		assertTrue(assetRepository.findByIdAndStatus(UUID.randomUUID(), AssetStatus.ACTIVE).isEmpty());

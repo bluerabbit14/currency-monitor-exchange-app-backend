@@ -54,7 +54,7 @@ class RateRepositoryIT {
 
 	@Test
 	void seedsConfiguredPairsWithoutRates() {
-		assertEquals(21, assetPairRepository.count());
+		assertEquals(20, assetPairRepository.count());
 		assertEquals(0, exchangeRateRepository.count());
 		assertEquals(0, rateHistoryRepository.count());
 		assertTrue(assetPairRepository.findByStatusAndSymbols(AssetStatus.ACTIVE, "BTC", "USD").isPresent());
