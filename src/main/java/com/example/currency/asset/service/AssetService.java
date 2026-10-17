@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -26,6 +27,11 @@ public class AssetService {
 	public Page<AssetResponse> listActive(AssetType type, String search, Pageable pageable) {
 		return assetRepository.findActive(type, normalizeSearch(search), pageable)
 				.map(AssetService::toResponse);
+	}
+
+	/** Empty when the asset is missing or no longer active. */
+	public Optional<AssetResponse> findActive(UUID id) {
+		return assetRepository.findByIdAndStatus(id, AssetStatus.ACTIVE).map(AssetService::toResponse);
 	}
 
 	public AssetResponse getActive(UUID id) {

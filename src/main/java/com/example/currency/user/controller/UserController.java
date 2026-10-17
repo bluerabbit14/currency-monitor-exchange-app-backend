@@ -2,10 +2,12 @@ package com.example.currency.user.controller;
 
 import com.example.currency.auth.service.TokenService;
 import com.example.currency.config.OpenApiConfig;
+import com.example.currency.deletion.dto.DeletionScheduleResponse;
 import com.example.currency.user.dto.UpdateUserProfileRequest;
 import com.example.currency.user.dto.UserProfileResponse;
 import com.example.currency.user.service.UserProfileService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -38,7 +40,7 @@ public class UserController {
 	@GetMapping("/me")
 	@Operation(summary = "Get the signed-in user's profile")
 	public ResponseEntity<UserProfileResponse> getProfile(
-			@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
+			@Parameter(hidden = true) @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
 		UUID userId = tokenService.requireUserId(authorization);
 		return ResponseEntity.ok(userProfileService.getProfile(userId));
 	}
@@ -46,19 +48,24 @@ public class UserController {
 	@PatchMapping("/me")
 	@Operation(summary = "Update the signed-in user's profile")
 	public ResponseEntity<UserProfileResponse> updateProfile(
-			@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization,
+			@Parameter(hidden = true) @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization,
 			@Valid @RequestBody UpdateUserProfileRequest request) {
 		UUID userId = tokenService.requireUserId(authorization);
 		return ResponseEntity.ok(userProfileService.updateProfile(userId, request));
 	}
 
 	@DeleteMapping("/me")
-	@Operation(summary = "Delete the signed-in user's profile")
-	public ResponseEntity<Void> deleteProfile(
-			@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
+	@Operation(
+			summary = "Request deletion of the signed-in user's profile",
+			description = """
+					Starts a grace period (15 days by default). The user is signed out everywhere. Signing in again
+					during the grace period cancels the deletion. After it, personal data, alerts, favorites and
+					devices are permanently erased; payment records are kept.
+					""")
+	public ResponseEntity<DeletionScheduleResponse> deleteProfile(
+			@Parameter(hidden = true) @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
 		UUID userId = tokenService.requireUserId(authorization);
-		userProfileService.deleteProfile(userId);
-		return ResponseEntity.noContent().build();
+		return ResponseEntity.accepted().body(userProfileService.deleteProfile(userId));
 	}
 
 }

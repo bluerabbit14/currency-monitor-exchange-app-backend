@@ -64,6 +64,12 @@ public class User extends AuditableEntity {
 	@Column(name = "email_verified_at")
 	private Instant emailVerifiedAt;
 
+	@Column(name = "deletion_requested_at")
+	private Instant deletionRequestedAt;
+
+	@Column(name = "deletion_scheduled_at")
+	private Instant deletionScheduledAt;
+
 	@OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
 	private Set<UserAuthProvider> authProviders = new LinkedHashSet<>();
 
@@ -161,6 +167,26 @@ public class User extends AuditableEntity {
 
 	public void setEmailVerifiedAt(Instant emailVerifiedAt) {
 		this.emailVerifiedAt = emailVerifiedAt;
+	}
+
+	public Instant getDeletionRequestedAt() {
+		return deletionRequestedAt;
+	}
+
+	public Instant getDeletionScheduledAt() {
+		return deletionScheduledAt;
+	}
+
+	public void scheduleDeletion(Instant requestedAt, Instant scheduledAt) {
+		this.status = UserStatus.PENDING_DELETION;
+		this.deletionRequestedAt = requestedAt;
+		this.deletionScheduledAt = scheduledAt;
+	}
+
+	public void cancelDeletion() {
+		this.status = UserStatus.ACTIVE;
+		this.deletionRequestedAt = null;
+		this.deletionScheduledAt = null;
 	}
 
 	public Set<UserAuthProvider> getAuthProviders() {

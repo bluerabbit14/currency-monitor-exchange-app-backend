@@ -124,6 +124,11 @@ public class OtpService {
 			user = register(email);
 			newUser = true;
 		}
+		boolean restored = false;
+		if (user.getStatus() == UserStatus.PENDING_DELETION) {
+			user.cancelDeletion();
+			restored = true;
+		}
 		if (user.getStatus() != UserStatus.ACTIVE) {
 			throw failed(email, "USER_NOT_ACTIVE", SystemEventType.OTP_VERIFY_FAILED);
 		}
@@ -141,6 +146,11 @@ public class OtpService {
 				.userId(user.getId())
 				.recipient(email)
 				.meta("purpose", challenge.get(PURPOSE)));
+		if (restored) {
+			systemLog.log(SystemLogEvent.of(SystemEventType.ACCOUNT_DELETION_CANCELLED, SystemLogStatus.SUCCESS)
+					.userId(user.getId())
+					.recipient(email));
+		}
 		if (newUser) {
 			systemLog.log(SystemLogEvent.of(SystemEventType.REGISTRATION_COMPLETED, SystemLogStatus.SUCCESS)
 					.userId(user.getId())
@@ -154,7 +164,9 @@ public class OtpService {
 
 	private void sendEmailOtp(String email) {
 		User user = userRepository.findByEmailIgnoreCase(email).orElse(null);
-		if (user != null && user.getStatus() != UserStatus.ACTIVE) {
+		// A user in the deletion grace period may request an OTP: signing in cancels the deletion.
+		if (user != null && user.getStatus() != UserStatus.ACTIVE
+				&& user.getStatus() != UserStatus.PENDING_DELETION) {
 			systemLog.log(SystemLogEvent.of(SystemEventType.OTP_SEND_SKIPPED, SystemLogStatus.SKIPPED)
 					.channel(SystemLogChannel.EMAIL)
 					.userId(user.getId())

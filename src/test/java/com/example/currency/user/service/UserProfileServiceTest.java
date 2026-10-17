@@ -2,6 +2,10 @@ package com.example.currency.user.service;
 
 import com.example.currency.auth.exception.InvalidAccessTokenException;
 import com.example.currency.auth.repository.RefreshSessionRepository;
+import com.example.currency.asset.service.AssetService;
+import com.example.currency.deletion.config.DeletionProperties;
+import com.example.currency.plan.service.PlanService;
+import com.example.currency.systemlog.service.SystemLogService;
 import com.example.currency.user.dto.UpdateUserProfileRequest;
 import com.example.currency.user.dto.UserProfileResponse;
 import com.example.currency.user.entity.User;
@@ -35,11 +39,21 @@ class UserProfileServiceTest {
 	@Mock
 	private RefreshSessionRepository refreshSessionRepository;
 
+	@Mock
+	private SystemLogService systemLog;
+
+	@Mock
+	private PlanService planService;
+
+	@Mock
+	private AssetService assetService;
+
 	private UserProfileService userProfileService;
 
 	@BeforeEach
 	void setUp() {
-		userProfileService = new UserProfileService(userRepository, refreshSessionRepository);
+		userProfileService = new UserProfileService(
+				userRepository, refreshSessionRepository, new DeletionProperties(), systemLog, planService, assetService);
 		lenient().when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 	}
 
@@ -57,7 +71,9 @@ class UserProfileServiceTest {
 				"Ada",
 				"https://cdn.example.com/ada.png",
 				user.getCreatedAt(),
-				user.getUpdatedAt()), response);
+				user.getUpdatedAt(),
+				null,
+				null), response);
 		verify(userRepository, never()).save(any());
 	}
 
