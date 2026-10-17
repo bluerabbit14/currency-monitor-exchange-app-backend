@@ -17,6 +17,20 @@ public interface AssetPairRepository extends JpaRepository<AssetPair, UUID> {
 	 */
 	List<AssetPair> findByStatus(AssetStatus status);
 
+	/**
+	 * Pairs for one provider with both assets loaded, for collectors that run outside a transaction.
+	 */
+	@Query("""
+			SELECT p FROM AssetPair p
+			JOIN FETCH p.baseAsset
+			JOIN FETCH p.quoteAsset
+			WHERE p.status = :status
+			  AND UPPER(p.providerCode) = UPPER(:providerCode)
+			""")
+	List<AssetPair> findByStatusAndProviderCodeWithAssets(
+			@Param("status") AssetStatus status,
+			@Param("providerCode") String providerCode);
+
 	@Query("""
 			SELECT p FROM AssetPair p
 			JOIN FETCH p.baseAsset base

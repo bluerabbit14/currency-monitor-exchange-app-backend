@@ -17,6 +17,12 @@ public class RateProperties {
 
 	private final TwelveData twelvedata = new TwelveData();
 
+	private final CoinGecko coingecko = new CoinGecko();
+
+	public CoinGecko getCoingecko() {
+		return coingecko;
+	}
+
 	public Duration getStaleAfter() {
 		return staleAfter;
 	}
@@ -149,6 +155,130 @@ public class RateProperties {
 
 		public void setDailyRequestLimit(int dailyRequestLimit) {
 			this.dailyRequestLimit = dailyRequestLimit;
+		}
+
+		public Duration getRateLimitBackoff() {
+			return rateLimitBackoff;
+		}
+
+		public void setRateLimitBackoff(Duration rateLimitBackoff) {
+			this.rateLimitBackoff = rateLimitBackoff;
+		}
+
+	}
+
+	public static class CoinGecko {
+
+		/**
+		 * Master switch for the CoinGecko scheduler. Off by default; it also needs an API key to register.
+		 */
+		private boolean enabled = false;
+
+		/**
+		 * Delay between the end of one run and the start of the next. One batched request per run, so five
+		 * minutes is about 8,640 requests in 30 days (Demo plan: 10,000 a month).
+		 */
+		private Duration interval = Duration.ofMinutes(5);
+
+		private Duration initialDelay = Duration.ofSeconds(45);
+
+		/**
+		 * Read from the environment (COINGECKO_API_KEY). Never logged.
+		 */
+		private String apiKey;
+
+		/**
+		 * Demo keys use {@code x-cg-demo-api-key}; Pro keys use {@code x-cg-pro-api-key} with the Pro base URL.
+		 */
+		private String apiKeyHeader = "x-cg-demo-api-key";
+
+		private String baseUrl = "https://api.coingecko.com/api/v3";
+
+		private Duration connectTimeout = Duration.ofSeconds(3);
+
+		private Duration readTimeout = Duration.ofSeconds(10);
+
+		/**
+		 * Local, in-memory estimate of requests to spend per UTC month. It resets on restart and is not shared
+		 * between instances or other users of the same key, so keep it below the plan quota with headroom.
+		 */
+		private int monthlyRequestLimit = 9000;
+
+		/**
+		 * How long to stop calling the provider after a 429 that carries no usable Retry-After header.
+		 */
+		private Duration rateLimitBackoff = Duration.ofMinutes(15);
+
+		public boolean isEnabled() {
+			return enabled;
+		}
+
+		public void setEnabled(boolean enabled) {
+			this.enabled = enabled;
+		}
+
+		public Duration getInterval() {
+			return interval;
+		}
+
+		public void setInterval(Duration interval) {
+			this.interval = interval;
+		}
+
+		public Duration getInitialDelay() {
+			return initialDelay;
+		}
+
+		public void setInitialDelay(Duration initialDelay) {
+			this.initialDelay = initialDelay;
+		}
+
+		public String getApiKey() {
+			return apiKey;
+		}
+
+		public void setApiKey(String apiKey) {
+			this.apiKey = apiKey;
+		}
+
+		public String getApiKeyHeader() {
+			return apiKeyHeader;
+		}
+
+		public void setApiKeyHeader(String apiKeyHeader) {
+			this.apiKeyHeader = apiKeyHeader;
+		}
+
+		public String getBaseUrl() {
+			return baseUrl;
+		}
+
+		public void setBaseUrl(String baseUrl) {
+			this.baseUrl = baseUrl;
+		}
+
+		public Duration getConnectTimeout() {
+			return connectTimeout;
+		}
+
+		public void setConnectTimeout(Duration connectTimeout) {
+			this.connectTimeout = connectTimeout;
+		}
+
+		public Duration getReadTimeout() {
+			return readTimeout;
+		}
+
+		public void setReadTimeout(Duration readTimeout) {
+			this.readTimeout = readTimeout;
+		}
+
+		public int getMonthlyRequestLimit() {
+			return monthlyRequestLimit;
+		}
+
+		public void setMonthlyRequestLimit(int monthlyRequestLimit) {
+			this.monthlyRequestLimit = monthlyRequestLimit;
 		}
 
 		public Duration getRateLimitBackoff() {

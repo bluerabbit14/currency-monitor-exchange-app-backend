@@ -394,6 +394,18 @@ Controller: `RateController` · Base: `/api/v1/rates` · **Public** (no auth). S
 **Response 200:** `RateResponse`
 **Errors:** `404` with `code` = `UNSUPPORTED_PAIR` (pair not configured) or `RATE_NOT_AVAILABLE` (no cached rate yet)
 
+**Crypto in a display currency.** Crypto is stored only as `CRYPTO/USD` (collected from CoinGecko). When `base` is
+a crypto asset and `quote` is a fiat currency with no stored pair (for example `/rates/BTC/INR`), the price is
+derived from the cached `BTC/USD` rate and the cached USD–fiat FX rate, with no new request to any provider. Pass the
+user's selected currency (`baseAsset.symbol` from the profile) as `quote`.
+
+- FX direction is read from the stored pair: `USD/XXX` multiplies, `XXX/USD` divides.
+- The result is rounded half-up to the fiat asset's `decimalScale` (never to zero for a positive price).
+- `observedAt` and `fetchedAt` are the older of the two inputs, `stale` is true if either input is stale, and
+  `providerCode` is `COINGECKO+TWELVEDATA`.
+- A fiat currency with no USD FX pair (currently JPY) is `UNSUPPORTED_PAIR`; a missing cached input is `RATE_NOT_AVAILABLE`.
+- `GET /rates` (list) returns stored pairs only and is unchanged.
+
 ### GET `/api/v1/rates/{base}/{quote}/history` — `history`
 
 | Param | Where | Type | Required | Description |
@@ -415,6 +427,10 @@ Controller: `RateController` · Base: `/api/v1/rates` · **Public** (no auth). S
 | `providerCode` | string |
 
 **Errors:** `400` bad timestamp, or `code` = `INVALID_RATE_HISTORY_RANGE` (`from` not earlier than `to`) · `404` `UNSUPPORTED_PAIR`
+
+For a derived crypto/fiat pair (see above), each `CRYPTO/USD` observation is converted with the newest stored FX
+observation at or before its own `observedAt`, not today's rate. Observations older than every stored FX observation
+are left out of `content`; `totalElements` still counts the underlying `CRYPTO/USD` observations.
 
 ---
 
