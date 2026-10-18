@@ -94,4 +94,23 @@ class GoogleAccountStoreTest {
 		assertTrue(provider.getValue().getUser() == reference);
 	}
 
+
+	@Test
+	void applyProfileIgnoresBlankNamesAndUnsafePictureUrls() {
+		User user = new User();
+		user.setDisplayName("Kept");
+		user.setProfileImageUrl("https://example.com/kept.png");
+
+		GoogleAccountStore.applyProfile(user, "   ", "javascript:alert(1)");
+		assertEquals("Kept", user.getDisplayName());
+		assertEquals("https://example.com/kept.png", user.getProfileImageUrl());
+
+		GoogleAccountStore.applyProfile(user, "  New Name  ", "https://lh3.googleusercontent.com/a/n");
+		assertEquals("New Name", user.getDisplayName());
+		assertEquals("https://lh3.googleusercontent.com/a/n", user.getProfileImageUrl());
+
+		GoogleAccountStore.applyProfile(user, "x".repeat(150), null);
+		assertEquals(100, user.getDisplayName().length());
+		assertEquals("https://lh3.googleusercontent.com/a/n", user.getProfileImageUrl());
+	}
 }

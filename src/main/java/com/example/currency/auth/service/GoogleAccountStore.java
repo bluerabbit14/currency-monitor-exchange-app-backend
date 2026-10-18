@@ -42,8 +42,7 @@ public class GoogleAccountStore {
 		user.setStatus(UserStatus.ACTIVE);
 		user.setEmailVerifiedAt(now);
 		user.setLastLoginAt(now);
-		user.setDisplayName(truncate(identity.name(), MAX_DISPLAY_NAME));
-		user.setProfileImageUrl(httpUrlOrNull(identity.pictureUrl()));
+		applyProfile(user, identity.name(), identity.pictureUrl());
 		user = userRepository.saveAndFlush(user);
 		insertGoogleLink(user, identity.subject(), now);
 		return user;
@@ -54,6 +53,21 @@ public class GoogleAccountStore {
 	public void link(UUID userId, String googleSubject) {
 		User user = userRepository.getReferenceById(userId);
 		insertGoogleLink(user, googleSubject, Instant.now());
+	}
+
+	/**
+	 * Copies the display name and picture Google supplied onto the user. A claim Google did not send (or sent
+	 * blank, over-long or not an http(s) URL) leaves the stored value untouched.
+	 */
+	public static void applyProfile(User user, String name, String pictureUrl) {
+		String displayName = name == null || name.isBlank() ? null : truncate(name.trim(), MAX_DISPLAY_NAME);
+		if (displayName != null) {
+			user.setDisplayName(displayName);
+		}
+		String picture = httpUrlOrNull(pictureUrl);
+		if (picture != null) {
+			user.setProfileImageUrl(picture);
+		}
 	}
 
 	private void insertGoogleLink(User user, String googleSubject, Instant now) {

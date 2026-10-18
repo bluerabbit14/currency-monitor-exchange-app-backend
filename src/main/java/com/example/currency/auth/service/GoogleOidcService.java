@@ -35,6 +35,7 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.Locale;
 import java.util.Map;
@@ -62,6 +63,8 @@ public class GoogleOidcService {
 	private static final String SUBJECT = "sub";
 	private static final String USER_ID = "userId";
 	private static final String EMAIL = "email";
+	private static final String NAME = "name";
+	private static final String PICTURE = "picture";
 	private static final String HASH = "hash";
 	private static final String ATTEMPTS = "attempts";
 	private static final String POINTER = "key";
@@ -111,7 +114,9 @@ public class GoogleOidcService {
 				.findByProviderAndProviderUserId(AuthProvider.GOOGLE, identity.subject());
 		if (linked.isPresent()) {
 			linked.get().setLastUsedAt(Instant.now());
-			return signedIn(linked.get().getUser(), false, email);
+			User user = linked.get().getUser();
+			GoogleAccountStore.applyProfile(user, identity.name(), identity.pictureUrl());
+			return signedIn(user, false, email);
 		}
 
 		Optional<User> existing = userRepository.findByEmailIgnoreCase(email);
@@ -199,6 +204,7 @@ public class GoogleOidcService {
 		if (user.getEmailVerifiedAt() == null) {
 			user.setEmailVerifiedAt(Instant.now());
 		}
+		GoogleAccountStore.applyProfile(user, pending.get(NAME), pending.get(PICTURE));
 		return signedIn(user, false, email);
 	}
 
@@ -251,12 +257,20 @@ public class GoogleOidcService {
 		// One pending link per Google identity: a new start invalidates the previous one.
 		store.get(pointerKey).map(pointer -> pointer.get(POINTER)).ifPresent(store::delete);
 		Duration ttl = Duration.ofSeconds(otpProperties.getTtlSeconds());
-		store.create(key, Map.of(
-				SUBJECT, identity.subject(),
-				USER_ID, existing.getId().toString(),
-				EMAIL, email,
-				HASH, otpHasher.hash(otp),
-				ATTEMPTS, "0"), ttl);
+		// Name and picture ride along so verifyLink can apply them once the OTP proves mailbox ownership.
+		Map<String, String> pending = new HashMap<>();
+		pending.put(SUBJECT, identity.subject());
+		pending.put(USER_ID, existing.getId().toString());
+		pending.put(EMAIL, email);
+		pending.put(HASH, otpHasher.hash(otp));
+		pending.put(ATTEMPTS, "0");
+		if (identity.name() != null) {
+			pending.put(NAME, identity.name());
+		}
+		if (identity.pictureUrl() != null) {
+			pending.put(PICTURE, identity.pictureUrl());
+		}
+		store.create(key, pending, ttl);
 		store.create(pointerKey, Map.of(POINTER, key), ttl);
 		try {
 			otpEmailSender.sendOtp(email, otp);

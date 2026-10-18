@@ -131,6 +131,51 @@ class GoogleOidcServiceTest {
 	}
 
 	@Test
+	void signingInRefreshesTheDisplayNameAndPictureGoogleSent() {
+		User user = user(EMAIL, UserStatus.ACTIVE);
+		user.setDisplayName("Old Name");
+		user.setProfileImageUrl("https://example.com/old.png");
+		when(providerRepository.findByProviderAndProviderUserId(AuthProvider.GOOGLE, SUB))
+				.thenReturn(Optional.of(link(user, SUB)));
+
+		service.login("id-token");
+
+		assertEquals("Pat Person", user.getDisplayName());
+		assertEquals("https://example.com/p.png", user.getProfileImageUrl());
+	}
+
+	@Test
+	void signingInKeepsStoredProfileValuesGoogleDidNotSend() {
+		when(validator.verify(anyString()))
+				.thenReturn(new VerifiedGoogleIdentity(SUB, "Person@Example.com", true, null, null));
+		User user = user(EMAIL, UserStatus.ACTIVE);
+		user.setDisplayName("Kept Name");
+		user.setProfileImageUrl("https://example.com/kept.png");
+		when(providerRepository.findByProviderAndProviderUserId(AuthProvider.GOOGLE, SUB))
+				.thenReturn(Optional.of(link(user, SUB)));
+
+		service.login("id-token");
+
+		assertEquals("Kept Name", user.getDisplayName());
+		assertEquals("https://example.com/kept.png", user.getProfileImageUrl());
+	}
+
+	@Test
+	void verifyingTheLinkOtpAppliesTheNameAndPictureFromTheGoogleSignIn() {
+		User existing = user(EMAIL, UserStatus.ACTIVE);
+		when(userRepository.findByEmailIgnoreCase(EMAIL)).thenReturn(Optional.of(existing));
+		when(userRepository.findById(existing.getId())).thenReturn(Optional.of(existing));
+		GoogleOidcResponse started = service.login("id-token");
+		assertNull(existing.getDisplayName(), "nothing is applied before the OTP proves mailbox ownership");
+		assertNull(existing.getProfileImageUrl());
+
+		service.verifyLink(started.linkToken(), sentOtp());
+
+		assertEquals("Pat Person", existing.getDisplayName());
+		assertEquals("https://example.com/p.png", existing.getProfileImageUrl());
+	}
+
+	@Test
 	void aLinkedAccountInItsDeletionGracePeriodIsRestoredOnSignIn() {
 		User user = user(EMAIL, UserStatus.ACTIVE);
 		user.scheduleDeletion(java.time.Instant.now(), java.time.Instant.now().plusSeconds(86400));
