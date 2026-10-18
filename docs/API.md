@@ -102,6 +102,8 @@ Paginated response (Spring `Page<T>`):
 | 3 | Auth | POST | `/api/v1/auth/otp/verify` | No |
 | 4 | Auth | POST | `/api/v1/auth/refresh` | No |
 | 5 | Auth | POST | `/api/v1/auth/logout` | No |
+| – | Auth | POST | `/api/v1/auth/oidc/google` | No |
+| – | Auth | POST | `/api/v1/auth/oidc/google/link/verify` | No |
 | 6 | Users | GET | `/api/v1/users/me` | Yes |
 | 7 | Users | PATCH | `/api/v1/users/me` | Yes |
 | 8 | Account deletion | POST | `/api/v1/users/me/deletion/otp` (send identity OTP), `/api/v1/users/me/deletion` (request, 30-day grace), `/api/v1/auth/deletion/cancel` (cancel + sign in; no auth header) | Yes / Yes / No |
@@ -237,6 +239,35 @@ Revokes the refresh session.
 **Errors:** `400` validation
 
 ---
+
+### POST `/api/v1/auth/oidc/google` — Sign in with Google
+
+Body: `{ "idToken": "<Google ID token>" }`. The token is verified server-side with Google's verifier (RS256 signature
+against Google's keys, issuer `accounts.google.com`, audience = `GOOGLE_WEB_CLIENT_ID`, expiry). Only Google's stable
+`sub` identifies the person; the email is a contact address, never proof of identity, and `email_verified` must be true.
+
+**Response 200** (`body.status`):
+
+| `status` | When | Other fields |
+|---|---|---|
+| `SIGNED_IN` | `sub` already linked, or no account exists for the verified `sub` or email (one is created) | `accessToken`, `refreshToken`, `tokenType`, `expiresInSeconds`, `newUser` |
+| `LINK_VERIFICATION_REQUIRED` | the verified email already belongs to an account with no Google link | `linkToken`, `maskedEmail`, `linkExpiresInSeconds` |
+
+Accounts are never merged on email alone. In the second case an OTP was emailed to the existing account's own address
+(the client does not choose the account) and nothing is linked until the next call succeeds.
+
+**Errors:** `401` invalid/expired/forged token · `403` `GOOGLE_EMAIL_NOT_VERIFIED` or `ACCOUNT_NOT_ACTIVE` ·
+`409` `GOOGLE_ACCOUNT_CONFLICT` (the account is already linked to a different Google account) · `503` Google sign-in
+not configured, Google's keys unreachable, or the OTP email could not be sent.
+
+### POST `/api/v1/auth/oidc/google/link/verify` — Verify the emailed OTP and link
+
+Body: `{ "linkToken": "...", "otp": "123456" }`. The pending link is bound to the Google `sub` and the existing account
+that were verified in the previous step; it lives for the OTP lifetime, allows `app.otp.max-attempts` tries, and is
+single use. **Response 200:** same shape as `SIGNED_IN` above (`newUser` is false).
+
+**Errors:** `401` wrong, expired, already used or attempt-exhausted OTP/link (nothing is linked) · `409`
+`GOOGLE_ACCOUNT_CONFLICT` (the identity or account was linked elsewhere in the meantime) · `403` `ACCOUNT_NOT_ACTIVE`.
 
 ## 3. Users
 

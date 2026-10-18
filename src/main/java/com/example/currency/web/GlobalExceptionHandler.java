@@ -5,7 +5,12 @@ import com.example.currency.notification.exception.EmptyNotificationPreferenceUp
 import com.example.currency.notification.exception.NotificationNotFoundException;
 import com.example.currency.asset.enums.AssetType;
 import com.example.currency.asset.exception.AssetNotFoundException;
+import com.example.currency.auth.exception.AccountNotActiveException;
 import com.example.currency.auth.exception.EmailDeliveryException;
+import com.example.currency.auth.exception.GoogleAccountConflictException;
+import com.example.currency.auth.exception.GoogleEmailNotVerifiedException;
+import com.example.currency.auth.exception.GoogleSignInUnavailableException;
+import com.example.currency.auth.exception.InvalidGoogleTokenException;
 import com.example.currency.device.exception.DeviceNotFoundException;
 import com.example.currency.auth.exception.InvalidAccessTokenException;
 import com.example.currency.auth.exception.InvalidContactException;
@@ -216,6 +221,31 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	@ExceptionHandler(InvalidAccessTokenException.class)
 	ResponseEntity<Object> handleInvalidAccessToken(InvalidAccessTokenException ex, WebRequest request) {
 		return problem(ex, HttpStatus.UNAUTHORIZED, "Unauthorized", request);
+	}
+
+	@ExceptionHandler(InvalidGoogleTokenException.class)
+	ResponseEntity<Object> handleInvalidGoogleToken(InvalidGoogleTokenException ex, WebRequest request) {
+		return problem(ex, HttpStatus.UNAUTHORIZED, "Unauthorized", request);
+	}
+
+	@ExceptionHandler(GoogleEmailNotVerifiedException.class)
+	ResponseEntity<Object> handleGoogleEmailNotVerified(GoogleEmailNotVerifiedException ex, WebRequest request) {
+		return problem(ex, HttpStatus.FORBIDDEN, "Forbidden", GoogleEmailNotVerifiedException.CODE, request);
+	}
+
+	@ExceptionHandler(GoogleAccountConflictException.class)
+	ResponseEntity<Object> handleGoogleAccountConflict(GoogleAccountConflictException ex, WebRequest request) {
+		return problem(ex, HttpStatus.CONFLICT, "Conflict", GoogleAccountConflictException.CODE, request);
+	}
+
+	@ExceptionHandler(AccountNotActiveException.class)
+	ResponseEntity<Object> handleAccountNotActive(AccountNotActiveException ex, WebRequest request) {
+		return problem(ex, HttpStatus.FORBIDDEN, "Forbidden", AccountNotActiveException.CODE, request);
+	}
+
+	@ExceptionHandler(GoogleSignInUnavailableException.class)
+	ResponseEntity<Object> handleGoogleSignInUnavailable(GoogleSignInUnavailableException ex, WebRequest request) {
+		return problem(ex, HttpStatus.SERVICE_UNAVAILABLE, "Service Unavailable", request);
 	}
 
 	@ExceptionHandler(PhoneOtpNotSupportedException.class)
