@@ -1,5 +1,7 @@
 package com.example.currency.user.controller;
 
+import com.example.currency.user.dto.SetBaseCurrencyRequest;
+import org.springframework.web.bind.annotation.PutMapping;
 import com.example.currency.auth.service.TokenService;
 import com.example.currency.config.OpenApiConfig;
 import com.example.currency.deletion.dto.DeletionScheduleResponse;
@@ -52,6 +54,18 @@ public class UserController {
 			@Valid @RequestBody UpdateUserProfileRequest request) {
 		UUID userId = tokenService.requireUserId(authorization);
 		return ResponseEntity.ok(userProfileService.updateProfile(userId, request));
+	}
+
+	@PutMapping("/me/base-currency")
+	@Operation(
+			summary = "Set the signed-in user's base currency",
+			description = "Choose from GET /api/v1/currencies. Returns the updated profile. "
+					+ "404 when the id is not an active currency; 400 when currencyId is missing or not a UUID.")
+	public ResponseEntity<UserProfileResponse> setBaseCurrency(
+			@Parameter(hidden = true) @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization,
+			@Valid @RequestBody SetBaseCurrencyRequest request) {
+		UUID userId = tokenService.requireUserId(authorization);
+		return ResponseEntity.ok(userProfileService.setBaseCurrency(userId, request.currencyId()));
 	}
 
 	@DeleteMapping("/me")

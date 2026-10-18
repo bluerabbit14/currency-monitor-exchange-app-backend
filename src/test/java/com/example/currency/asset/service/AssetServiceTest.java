@@ -121,6 +121,27 @@ class AssetServiceTest {
 		verify(assetRepository).findByIdAndStatus(id, AssetStatus.ACTIVE);
 	}
 
+	@Test
+	void listsActiveFiatCurrenciesOnlyByName() {
+		Asset eur = asset("EUR", "Euro", AssetType.FIAT, AssetStatus.ACTIVE);
+		when(assetRepository.findByAssetTypeAndStatusOrderByNameAsc(AssetType.FIAT, AssetStatus.ACTIVE))
+				.thenReturn(List.of(eur));
+
+		List<AssetResponse> currencies = assetService.listActiveCurrencies();
+
+		assertEquals(1, currencies.size());
+		assertEquals("EUR", currencies.get(0).symbol());
+	}
+
+	@Test
+	void findActiveCurrencyLooksUpFiatOnly() {
+		UUID id = UUID.randomUUID();
+		when(assetRepository.findByIdAndAssetTypeAndStatus(id, AssetType.FIAT, AssetStatus.ACTIVE))
+				.thenReturn(Optional.empty());
+
+		assertEquals(Optional.empty(), assetService.findActiveCurrency(id));
+	}
+
 	private static Asset asset(String symbol, String name, AssetType type, AssetStatus status) {
 		Asset asset = new Asset();
 		setField(asset, "id", UUID.randomUUID());

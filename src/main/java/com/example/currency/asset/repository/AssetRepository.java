@@ -1,5 +1,6 @@
 package com.example.currency.asset.repository;
 
+import java.util.List;
 import com.example.currency.asset.entity.Asset;
 import com.example.currency.asset.enums.AssetStatus;
 import com.example.currency.asset.enums.AssetType;
@@ -27,5 +28,9 @@ public interface AssetRepository extends JpaRepository<Asset, UUID> {
 	Page<Asset> findActive(@Param("type") AssetType type, @Param("search") String search, Pageable pageable);
 
 	Optional<Asset> findByIdAndStatus(UUID id, AssetStatus status);
+
+	List<Asset> findByAssetTypeAndStatusOrderByNameAsc(AssetType assetType, AssetStatus status);
+
+	Optional<Asset> findByIdAndAssetTypeAndStatus(UUID id, AssetType assetType, AssetStatus status);
 
 }

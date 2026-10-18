@@ -1,5 +1,9 @@
 package com.example.currency.user.service;
 
+import com.example.currency.asset.dto.AssetResponse;
+import com.example.currency.asset.enums.AssetStatus;
+import com.example.currency.asset.enums.AssetType;
+import com.example.currency.asset.exception.CurrencyNotFoundException;
 import com.example.currency.notification.entity.NotificationPreference;
 import com.example.currency.notification.repository.NotificationPreferenceRepository;
 import com.example.currency.plan.dto.PlanFeatureResponse;
@@ -117,6 +121,47 @@ class UserProfileServiceTest {
 		assertEquals(false, json.contains("createdAt"));
 		assertEquals(false, json.contains("updatedAt"));
 		assertEquals(true, json.contains("\"notificationsEnabled\":true"));
+	}
+
+	@Test
+	void setBaseCurrencyStoresAnActiveFiatCurrencyAndReturnsTheProfile() {
+		User user = activeUser();
+		UUID currencyId = UUID.randomUUID();
+		AssetResponse usd = new AssetResponse(currencyId, "USD", "US Dollar", AssetType.FIAT, AssetStatus.ACTIVE);
+		when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+		when(assetService.findActiveCurrency(currencyId)).thenReturn(Optional.of(usd));
+		when(assetService.findActive(currencyId)).thenReturn(Optional.of(usd));
+
+		UserProfileResponse response = userProfileService.setBaseCurrency(user.getId(), currencyId);
+
+		assertEquals(currencyId, user.getBaseAssetId());
+		assertEquals(usd, response.baseCurrency());
+		verify(userRepository).save(user);
+	}
+
+	@Test
+	void setBaseCurrencyRejectsAnythingThatIsNotAnActiveCurrencyAndChangesNothing() {
+		User user = activeUser();
+		UUID previous = UUID.randomUUID();
+		user.setBaseAssetId(previous);
+		UUID bitcoin = UUID.randomUUID();
+		when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+		when(assetService.findActiveCurrency(bitcoin)).thenReturn(Optional.empty());
+
+		assertThrows(CurrencyNotFoundException.class, () -> userProfileService.setBaseCurrency(user.getId(), bitcoin));
+
+		assertEquals(previous, user.getBaseAssetId());
+		verify(userRepository, never()).save(any());
+	}
+
+	@Test
+	void setBaseCurrencyRejectsAnInactiveUser() {
+		User user = activeUser();
+		user.setStatus(UserStatus.SUSPENDED);
+		when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+		assertThrows(InvalidAccessTokenException.class,
+				() -> userProfileService.setBaseCurrency(user.getId(), UUID.randomUUID()));
 	}
 
 	@Test

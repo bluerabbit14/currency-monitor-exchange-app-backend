@@ -1,5 +1,6 @@
 package com.example.currency.user.service;
 
+import com.example.currency.asset.exception.CurrencyNotFoundException;
 import com.example.currency.notification.entity.NotificationPreference;
 import com.example.currency.notification.repository.NotificationPreferenceRepository;
 import com.example.currency.plan.dto.PlanResponse;
@@ -76,6 +77,14 @@ public class UserProfileService {
 			user = userRepository.save(user);
 		}
 		return toResponse(user);
+	}
+
+	/** Sets the currency the user compares prices against. Only active fiat currencies are accepted. */
+	public UserProfileResponse setBaseCurrency(UUID userId, UUID currencyId) {
+		User user = requireActive(userId);
+		assetService.findActiveCurrency(currencyId).orElseThrow(CurrencyNotFoundException::new);
+		user.setBaseAssetId(currencyId);
+		return toResponse(userRepository.save(user));
 	}
 
 	/**

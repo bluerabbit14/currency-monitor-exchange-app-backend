@@ -1,5 +1,6 @@
 package com.example.currency.asset.service;
 
+import java.util.List;
 import com.example.currency.asset.dto.AssetResponse;
 import com.example.currency.asset.entity.Asset;
 import com.example.currency.asset.enums.AssetStatus;
@@ -32,6 +33,19 @@ public class AssetService {
 	/** Empty when the asset is missing or no longer active. */
 	public Optional<AssetResponse> findActive(UUID id) {
 		return assetRepository.findByIdAndStatus(id, AssetStatus.ACTIVE).map(AssetService::toResponse);
+	}
+
+	/** Every active fiat currency, by name. The set is small, so it is not paginated. */
+	public List<AssetResponse> listActiveCurrencies() {
+		return assetRepository.findByAssetTypeAndStatusOrderByNameAsc(AssetType.FIAT, AssetStatus.ACTIVE).stream()
+				.map(AssetService::toResponse)
+				.toList();
+	}
+
+	/** Empty when the id is not an active fiat currency. */
+	public Optional<AssetResponse> findActiveCurrency(UUID id) {
+		return assetRepository.findByIdAndAssetTypeAndStatus(id, AssetType.FIAT, AssetStatus.ACTIVE)
+				.map(AssetService::toResponse);
 	}
 
 	public AssetResponse getActive(UUID id) {

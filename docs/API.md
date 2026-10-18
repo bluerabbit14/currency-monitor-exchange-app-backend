@@ -106,6 +106,8 @@ Paginated response (Spring `Page<T>`):
 | – | Auth | POST | `/api/v1/auth/oidc/google/link/verify` | No |
 | 6 | Users | GET | `/api/v1/users/me` | Yes |
 | 7 | Users | PATCH | `/api/v1/users/me` | Yes |
+| – | Users | PUT | `/api/v1/users/me/base-currency` | Yes |
+| – | Currencies | GET | `/api/v1/currencies` | No |
 | 8 | Account deletion | POST | `/api/v1/users/me/deletion/otp` (send identity OTP), `/api/v1/users/me/deletion` (request, 30-day grace), `/api/v1/auth/deletion/cancel` (cancel + sign in; no auth header) | Yes / Yes / No |
 | 9 | Assets | GET | `/api/v1/assets` | No |
 | 10 | Assets | GET | `/api/v1/assets/{id}` | No |
@@ -321,6 +323,14 @@ Controller: `UserController` · Base: `/api/v1/users`
 **Response 200:** `UserProfileResponse`
 **Errors:** `400` validation · `401`
 
+### PUT `/api/v1/users/me/base-currency` — `setBaseCurrency`
+
+Sets the currency the user compares prices against. Only an ACTIVE fiat currency from `GET /api/v1/currencies` is accepted.
+
+**Request:** `{ "currencyId": "3fa85f64-5717-4562-b3fc-2c963f66afa6" }`
+**Response 200:** `UserProfileResponse` (with `baseCurrency` filled in)
+**Errors:** `400` `currencyId` missing or not a UUID · `401` · `404` not an active currency (unknown, inactive, or not fiat)
+
 ### DELETE `/api/v1/users/me` — `deleteProfile`
 
 Deletes the signed-in user's account.
@@ -375,6 +385,16 @@ Controller: `AssetController` · Base: `/api/v1/assets` · **Public** (no auth).
 
 **Response 200:** `AssetResponse`
 **Errors:** `400` id not a UUID · `404` asset missing or inactive
+
+---
+
+### GET `/api/v1/currencies` — `list`
+
+**Public.** Every ACTIVE fiat currency sorted by name, as one unpaginated array of `AssetResponse`.
+
+```json
+[ { "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6", "symbol": "USD", "name": "US Dollar", "type": "FIAT", "status": "ACTIVE" } ]
+```
 
 ---
 

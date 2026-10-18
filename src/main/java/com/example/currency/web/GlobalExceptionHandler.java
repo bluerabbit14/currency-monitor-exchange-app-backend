@@ -1,5 +1,6 @@
 package com.example.currency.web;
 
+import com.example.currency.asset.exception.CurrencyNotFoundException;
 import com.example.currency.alert.exception.AlertNotFoundException;
 import com.example.currency.notification.exception.EmptyNotificationPreferenceUpdateException;
 import com.example.currency.notification.exception.NotificationNotFoundException;
@@ -145,6 +146,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
 	@ExceptionHandler(AssetNotFoundException.class)
 	ResponseEntity<Object> handleAssetNotFound(AssetNotFoundException ex, WebRequest request) {
+		return problem(ex, HttpStatus.NOT_FOUND, "Not Found", request);
+	}
+
+	@ExceptionHandler(CurrencyNotFoundException.class)
+	ResponseEntity<Object> handleCurrencyNotFound(CurrencyNotFoundException ex, WebRequest request) {
 		return problem(ex, HttpStatus.NOT_FOUND, "Not Found", request);
 	}
 
