@@ -1,5 +1,11 @@
 package com.example.currency.user.service;
 
+import com.example.currency.notification.entity.NotificationPreference;
+import com.example.currency.notification.repository.NotificationPreferenceRepository;
+import com.example.currency.plan.dto.PlanFeatureResponse;
+import com.example.currency.plan.dto.PlanResponse;
+import com.example.currency.user.dto.UserPlanResponse;
+import java.util.List;
 import com.example.currency.auth.exception.InvalidAccessTokenException;
 import com.example.currency.auth.repository.RefreshSessionRepository;
 import com.example.currency.asset.service.AssetService;
@@ -48,12 +54,16 @@ class UserProfileServiceTest {
 	@Mock
 	private AssetService assetService;
 
+	@Mock
+	private NotificationPreferenceRepository notificationPreferenceRepository;
+
 	private UserProfileService userProfileService;
 
 	@BeforeEach
 	void setUp() {
 		userProfileService = new UserProfileService(
-				userRepository, refreshSessionRepository, new DeletionProperties(), systemLog, planService, assetService);
+				userRepository, refreshSessionRepository, new DeletionProperties(), systemLog, planService, assetService,
+				notificationPreferenceRepository);
 		lenient().when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 	}
 
@@ -70,11 +80,43 @@ class UserProfileServiceTest {
 				"+15551212",
 				"Ada",
 				"https://cdn.example.com/ada.png",
-				user.getCreatedAt(),
-				user.getUpdatedAt(),
 				null,
-				null), response);
+				null,
+				true), response);
 		verify(userRepository, never()).save(any());
+	}
+
+	@Test
+	void getProfileExposesOnlyThePlanIdAndNameAndTheNotificationSetting() {
+		User user = activeUser();
+		UUID planId = UUID.randomUUID();
+		when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+		when(planService.currentPlanFor(user.getId())).thenReturn(new PlanResponse(
+				planId, "FREE", "Free", true,
+				List.of(new PlanFeatureResponse("max_favorites", true, 10))));
+		NotificationPreference preference = new NotificationPreference();
+		preference.setPushEnabled(false);
+		when(notificationPreferenceRepository.findByUserId(user.getId())).thenReturn(Optional.of(preference));
+
+		UserProfileResponse response = userProfileService.getProfile(user.getId());
+
+		assertEquals(new UserPlanResponse(planId, "Free"), response.currentPlan());
+		assertEquals(false, response.notificationsEnabled());
+		verify(notificationPreferenceRepository, never()).save(any());
+		verify(notificationPreferenceRepository, never()).saveAndFlush(any());
+	}
+
+	@Test
+	void getProfileDoesNotSerialiseTimestamps() throws Exception {
+		User user = activeUser();
+		when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+		String json = new com.fasterxml.jackson.databind.ObjectMapper()
+				.writeValueAsString(userProfileService.getProfile(user.getId()));
+
+		assertEquals(false, json.contains("createdAt"));
+		assertEquals(false, json.contains("updatedAt"));
+		assertEquals(true, json.contains("\"notificationsEnabled\":true"));
 	}
 
 	@Test

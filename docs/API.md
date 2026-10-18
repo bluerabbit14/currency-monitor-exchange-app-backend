@@ -286,8 +286,9 @@ Controller: `UserController` · Base: `/api/v1/users`
 | `phoneNumber` | string | nullable |
 | `displayName` | string | nullable |
 | `profileImageUrl` | string | nullable |
-| `createdAt` | ISO-8601 instant | |
-| `updatedAt` | ISO-8601 instant | |
+| `currentPlan` | object | `{ id, name }` of the plan the user is on (the default plan without a subscription). Feature limits are served by the plans endpoint |
+| `baseCurrency` | object | The asset the user compares prices against (`id`, `symbol`, `name`, `type`, `status`); null until they pick one |
+| `notificationsEnabled` | boolean | Push notifications allowed; true until the user turns them off |
 
 ```json
 {
@@ -296,8 +297,9 @@ Controller: `UserController` · Base: `/api/v1/users`
   "phoneNumber": null,
   "displayName": "Asif",
   "profileImageUrl": "https://example.com/me.png",
-  "createdAt": "2026-10-12T04:00:00Z",
-  "updatedAt": "2026-10-12T04:00:00Z"
+  "currentPlan": { "id": "a328432c-45dc-4777-9214-ab6033e0752f", "name": "Free" },
+  "baseCurrency": null,
+  "notificationsEnabled": true
 }
 ```
 

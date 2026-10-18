@@ -1,5 +1,9 @@
 package com.example.currency.user.service;
 
+import com.example.currency.notification.entity.NotificationPreference;
+import com.example.currency.notification.repository.NotificationPreferenceRepository;
+import com.example.currency.plan.dto.PlanResponse;
+import com.example.currency.user.dto.UserPlanResponse;
 import com.example.currency.asset.service.AssetService;
 import com.example.currency.auth.exception.InvalidAccessTokenException;
 import com.example.currency.auth.repository.RefreshSessionRepository;
@@ -33,6 +37,7 @@ public class UserProfileService {
 	private final SystemLogService systemLog;
 	private final PlanService planService;
 	private final AssetService assetService;
+	private final NotificationPreferenceRepository notificationPreferenceRepository;
 
 	public UserProfileService(
 			UserRepository userRepository,
@@ -40,13 +45,15 @@ public class UserProfileService {
 			DeletionProperties deletionProperties,
 			SystemLogService systemLog,
 			PlanService planService,
-			AssetService assetService) {
+			AssetService assetService,
+			NotificationPreferenceRepository notificationPreferenceRepository) {
 		this.userRepository = userRepository;
 		this.refreshSessionRepository = refreshSessionRepository;
 		this.deletionProperties = deletionProperties;
 		this.systemLog = systemLog;
 		this.planService = planService;
 		this.assetService = assetService;
+		this.notificationPreferenceRepository = notificationPreferenceRepository;
 	}
 
 	@Transactional(readOnly = true)
@@ -101,10 +108,16 @@ public class UserProfileService {
 				user.getPhoneNumber(),
 				user.getDisplayName(),
 				user.getProfileImageUrl(),
-				user.getCreatedAt(),
-				user.getUpdatedAt(),
-				planService.currentPlanFor(user.getId()),
-				user.getBaseAssetId() == null ? null : assetService.findActive(user.getBaseAssetId()).orElse(null));
+				toUserPlan(planService.currentPlanFor(user.getId())),
+				user.getBaseAssetId() == null ? null : assetService.findActive(user.getBaseAssetId()).orElse(null),
+				// Read-only lookup: a user who never touched the setting has no row and gets the default (on).
+				notificationPreferenceRepository.findByUserId(user.getId())
+						.map(NotificationPreference::isPushEnabled)
+						.orElse(true));
+	}
+
+	private static UserPlanResponse toUserPlan(PlanResponse plan) {
+		return plan == null ? null : new UserPlanResponse(plan.id(), plan.name());
 	}
 
 	private static String blankToNull(String value) {
