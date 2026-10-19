@@ -2,6 +2,8 @@ package com.example.currency.web;
 
 import com.example.currency.asset.exception.CurrencyNotFoundException;
 import com.example.currency.alert.exception.AlertNotFoundException;
+import com.example.currency.auth.exception.AdminAccessDeniedException;
+import com.example.currency.feedback.exception.FeedbackNotFoundException;
 import com.example.currency.notification.exception.EmptyNotificationPreferenceUpdateException;
 import com.example.currency.notification.exception.NotificationNotFoundException;
 import com.example.currency.asset.enums.AssetType;
@@ -157,6 +159,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	@ExceptionHandler(DeviceNotFoundException.class)
 	ResponseEntity<Object> handleDeviceNotFound(DeviceNotFoundException ex, WebRequest request) {
 		return problem(ex, HttpStatus.NOT_FOUND, "Not Found", request);
+	}
+
+	@ExceptionHandler(FeedbackNotFoundException.class)
+	ResponseEntity<Object> handleFeedbackNotFound(FeedbackNotFoundException ex, WebRequest request) {
+		return problem(ex, HttpStatus.NOT_FOUND, "Not Found", request);
+	}
+
+	@ExceptionHandler(AdminAccessDeniedException.class)
+	ResponseEntity<Object> handleAdminAccessDenied(AdminAccessDeniedException ex, WebRequest request) {
+		return problem(ex, HttpStatus.FORBIDDEN, "Forbidden", request);
 	}
 
 	@ExceptionHandler(AlertNotFoundException.class)

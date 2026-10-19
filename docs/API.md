@@ -134,6 +134,8 @@ Paginated response (Spring `Page<T>`):
 | 30 | Devices | GET | `/api/v1/users/me/devices` | Yes |
 | 31 | Devices | PATCH | `/api/v1/users/me/devices/{deviceId}` | Yes |
 | 32 | Devices | DELETE | `/api/v1/users/me/devices/{deviceId}` | Yes |
+| 33 | Feedback | POST | `/api/v1/feedback` | Yes |
+| 34 | Admin | PATCH | `/api/v1/admin/feedback/{id}/status` | Admin key |
 
 ---
 
@@ -795,6 +797,40 @@ Deactivates the device (idempotent).
 
 **Response 204:** no body
 **Errors:** `400` · `401` · `404`
+
+---
+
+## 11. Feedback
+
+### POST `/api/v1/feedback` — `submit`
+
+Send a 1 to 5 rating, a message, or both. **Requires `Authorization: Bearer <accessToken>` in the header** (never in the body or query); the feedback is linked to that user.
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `rating` | int | one of rating / message | 1 to 5 |
+| `message` | string | one of rating / message | max 2000 chars, trimmed, blank counts as missing |
+| `category` | `BUG` \| `SUGGESTION` \| `GENERAL` | no | default `GENERAL` |
+| `appVersion` | string | no | max 30 chars |
+| `platform` | `ANDROID` \| `IOS` \| `WEB` | no | default `ANDROID` |
+
+```json
+{ "rating": 5, "category": "SUGGESTION", "message": "Please add dark mode", "appVersion": "1.4.2", "platform": "IOS" }
+```
+
+**Response 201 – `FeedbackResponse`:** `id`, `rating`, `category`, `message`, `appVersion`, `platform`, `status` (`NEW`), `createdAt`, `updatedAt`.
+
+**Errors:** `400` neither rating nor message, rating out of range, unknown category or platform · `401` missing or invalid token.
+
+### PATCH `/api/v1/admin/feedback/{id}/status` — `updateStatus`
+
+Moves feedback between `NEW`, `REVIEWED` and `RESOLVED`. Admin only: send the key in the **`X-Admin-Key`** header (configured with `ADMIN_API_KEY`). With no key configured the endpoint is closed to everyone.
+
+```json
+{ "status": "RESOLVED" }
+```
+
+**Response 200:** the updated `FeedbackResponse`. **Errors:** `400` bad id or status · `403` missing or wrong admin key · `404` feedback not found.
 
 ---
 
