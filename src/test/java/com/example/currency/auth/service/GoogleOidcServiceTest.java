@@ -105,7 +105,7 @@ class GoogleOidcServiceTest {
 		when(providerRepository.findByProviderAndProviderUserId(any(), anyString())).thenReturn(Optional.empty());
 		when(userRepository.findByEmailIgnoreCase(anyString())).thenReturn(Optional.empty());
 		when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-		when(tokenService.issue(any(User.class))).thenReturn(new AuthTokenResponse("access", "refresh", "Bearer", 900));
+		when(tokenService.issue(any(User.class))).thenReturn(new AuthTokenResponse("access", "refresh", "Bearer", 900, null));
 	}
 
 	// ----- Google identity already linked -----

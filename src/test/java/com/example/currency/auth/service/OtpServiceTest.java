@@ -170,7 +170,7 @@ class OtpServiceTest {
 		when(userRepository.save(created)).thenReturn(created);
 		when(userAuthProviderRepository.findByProviderAndProviderUserId(AuthProvider.EMAIL, EMAIL))
 				.thenReturn(Optional.of(new UserAuthProvider()));
-		when(tokenService.issue(created)).thenReturn(new AuthTokenResponse("access", "refresh", "Bearer", 900));
+		when(tokenService.issue(created)).thenReturn(new AuthTokenResponse("access", "refresh", "Bearer", 900, null));
 		OtpVerifyResponse response = otpService.verifyOtp(EMAIL, "123456");
 
 		assertTrue(response.newUser());
@@ -199,7 +199,7 @@ class OtpServiceTest {
 		when(userRepository.save(user)).thenReturn(user);
 		when(userAuthProviderRepository.findByProviderAndProviderUserId(AuthProvider.EMAIL, EMAIL))
 				.thenReturn(Optional.of(provider));
-		when(tokenService.issue(user)).thenReturn(new AuthTokenResponse("access", "refresh", "Bearer", 900));
+		when(tokenService.issue(user)).thenReturn(new AuthTokenResponse("access", "refresh", "Bearer", 900, null));
 
 		OtpVerifyResponse response = otpService.verifyOtp(EMAIL, "123456");
 

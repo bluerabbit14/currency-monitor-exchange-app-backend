@@ -43,7 +43,7 @@ class GoogleOidcControllerTest {
 	@Test
 	void signedInReturnsYakkuTokensAndNoLinkFields() throws Exception {
 		when(service.login("id-token")).thenReturn(GoogleOidcResponse.signedIn(
-				new AuthTokenResponse("access", "refresh", "Bearer", 900), true));
+				new AuthTokenResponse("access", "refresh", "Bearer", 900, null), true));
 
 		mockMvc.perform(post(SIGN_IN).contentType(MediaType.APPLICATION_JSON).content("{\"idToken\":\"id-token\"}"))
 				.andExpect(status().isOk())
@@ -85,7 +85,7 @@ class GoogleOidcControllerTest {
 	@Test
 	void aClientCannotSupplyAnEmailOrUserIdToInfluenceWhoIsSignedIn() throws Exception {
 		when(service.login("id-token")).thenReturn(GoogleOidcResponse.signedIn(
-				new AuthTokenResponse("a", "r", "Bearer", 900), false));
+				new AuthTokenResponse("a", "r", "Bearer", 900, null), false));
 
 		mockMvc.perform(post(SIGN_IN).contentType(MediaType.APPLICATION_JSON)
 						.content("{\"idToken\":\"id-token\",\"email\":\"victim@example.com\",\"userId\":\"1\"}"))
@@ -133,7 +133,7 @@ class GoogleOidcControllerTest {
 	@Test
 	void verifyLinkReturnsTokensOnSuccess() throws Exception {
 		when(service.verifyLink("link-secret", "123456")).thenReturn(GoogleOidcResponse.signedIn(
-				new AuthTokenResponse("access", "refresh", "Bearer", 900), false));
+				new AuthTokenResponse("access", "refresh", "Bearer", 900, null), false));
 
 		mockMvc.perform(post(VERIFY).contentType(MediaType.APPLICATION_JSON)
 						.content("{\"linkToken\":\"link-secret\",\"otp\":\"123456\"}"))
