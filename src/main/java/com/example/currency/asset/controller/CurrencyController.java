@@ -25,7 +25,7 @@ public class CurrencyController {
 	@GetMapping
 	@Operation(
 			summary = "List all active currencies",
-			description = "Returns every ACTIVE fiat currency sorted by name, in one unpaginated list. "
+			description = "Public. Returns every ACTIVE fiat currency sorted by name, in one unpaginated list. "
 					+ "Use an id from this list with PUT /api/v1/users/me/base-currency.")
 	public ResponseEntity<List<AssetResponse>> list() {
 		return ResponseEntity.ok(assetService.listActiveCurrencies());

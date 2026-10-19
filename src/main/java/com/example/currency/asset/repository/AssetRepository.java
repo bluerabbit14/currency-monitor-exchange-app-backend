@@ -29,6 +29,8 @@ public interface AssetRepository extends JpaRepository<Asset, UUID> {
 
 	Optional<Asset> findByIdAndStatus(UUID id, AssetStatus status);
 
+	List<Asset> findByStatusOrderByNameAsc(AssetStatus status);
+
 	List<Asset> findByAssetTypeAndStatusOrderByNameAsc(AssetType assetType, AssetStatus status);
 
 	Optional<Asset> findByIdAndAssetTypeAndStatus(UUID id, AssetType assetType, AssetStatus status);

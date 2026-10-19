@@ -108,6 +108,7 @@ Paginated response (Spring `Page<T>`):
 | 7 | Users | PATCH | `/api/v1/users/me` | Yes |
 | – | Users | PUT | `/api/v1/users/me/base-currency` | Yes |
 | – | Currencies | GET | `/api/v1/currencies` | No |
+| – | Assets | GET | `/api/v1/assets/grouped` | Yes |
 | 8 | Account deletion | POST | `/api/v1/users/me/deletion/otp` (send identity OTP), `/api/v1/users/me/deletion` (request, 30-day grace), `/api/v1/auth/deletion/cancel` (cancel + sign in; no auth header) | Yes / Yes / No |
 | 9 | Assets | GET | `/api/v1/assets` | No |
 | 10 | Assets | GET | `/api/v1/assets/{id}` | No |
@@ -397,6 +398,17 @@ Controller: `AssetController` · Base: `/api/v1/assets` · **Public** (no auth).
 [ { "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6", "symbol": "USD", "name": "US Dollar", "type": "FIAT", "status": "ACTIVE" } ]
 ```
 
+### GET `/api/v1/assets/grouped` — `list`
+
+**Requires `Authorization: Bearer <accessToken>` (header only); 401 without a valid token.** Every ACTIVE asset grouped by type (`FIAT`, `CRYPTO`, `COMMODITY`; a type with no assets is an empty array), each group sorted by name, unpaginated. `favorite` is true when the signed-in user has favorited the asset.
+
+```json
+{
+  "FIAT": [ { "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6", "symbol": "USD", "name": "US Dollar", "favorite": true, "status": "ACTIVE" } ],
+  "CRYPTO": [ { "id": "1630d34f-a63b-4d1e-9214-2495920a2090", "symbol": "BTC", "name": "Bitcoin", "favorite": false, "status": "ACTIVE" } ],
+  "COMMODITY": []
+}
+```
 ---
 
 ## 5. Rates

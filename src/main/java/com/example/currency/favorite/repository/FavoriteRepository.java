@@ -14,6 +14,9 @@ public interface FavoriteRepository extends JpaRepository<UserFavorite, UUID> {
 
 	boolean existsByUserIdAndAssetId(UUID userId, UUID assetId);
 
+	@Query("SELECT f.asset.id FROM UserFavorite f WHERE f.user.id = :userId")
+	List<UUID> findAssetIdsByUserId(@Param("userId") UUID userId);
+
 	Optional<UserFavorite> findByUserIdAndAssetId(UUID userId, UUID assetId);
 
 	@Modifying(clearAutomatically = true, flushAutomatically = true)
