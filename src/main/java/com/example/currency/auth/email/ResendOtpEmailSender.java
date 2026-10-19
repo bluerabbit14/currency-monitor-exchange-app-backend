@@ -59,11 +59,12 @@ public class ResendOtpEmailSender implements OtpEmailSender {
 					.toBodilessEntity();
 		}
 		catch (RestClientResponseException ex) {
-			log.warn("Resend OTP delivery failed with status {}", ex.getStatusCode().value());
+			log.warn("Resend OTP delivery failed with status {}: {}", ex.getStatusCode().value(),
+					ex.getResponseBodyAsString());
 			throw new EmailDeliveryException();
 		}
 		catch (RestClientException ex) {
-			log.warn("Resend OTP delivery failed");
+			log.warn("Resend OTP delivery failed: {}", ex.getMessage());
 			throw new EmailDeliveryException();
 		}
 	}
