@@ -203,6 +203,7 @@ Verifies the OTP and returns tokens. Creates the user on first sign-in.
 | `refreshToken` | string | Opaque token for `/refresh` and `/logout` |
 | `tokenType` | string | Always `Bearer` |
 | `expiresInSeconds` | long | Access token lifetime (900) |
+| `baseCurrencyId` | UUID or null | Null until the user picks a base currency; the app then shows the base-currency chooser before opening |
 
 ```json
 {
@@ -252,7 +253,7 @@ against Google's keys, issuer `accounts.google.com`, audience = `GOOGLE_WEB_CLIE
 
 | `status` | When | Other fields |
 |---|---|---|
-| `SIGNED_IN` | `sub` already linked, or no account exists for the verified `sub` or email (one is created) | `accessToken`, `refreshToken`, `tokenType`, `expiresInSeconds`, `newUser` |
+| `SIGNED_IN` | `sub` already linked, or no account exists for the verified `sub` or email (one is created) | `accessToken`, `refreshToken`, `tokenType`, `expiresInSeconds`, `newUser`, `baseCurrencyId` (nullable) |
 | `LINK_VERIFICATION_REQUIRED` | the verified email already belongs to an account with no Google link | `linkToken`, `maskedEmail`, `linkExpiresInSeconds` |
 
 Accounts are never merged on email alone. In the second case an OTP was emailed to the existing account's own address

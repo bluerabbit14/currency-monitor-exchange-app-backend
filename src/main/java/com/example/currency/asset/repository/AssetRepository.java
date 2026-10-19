@@ -20,9 +20,9 @@ public interface AssetRepository extends JpaRepository<Asset, UUID> {
 			WHERE a.status = com.example.currency.asset.enums.AssetStatus.ACTIVE
 			  AND (:type IS NULL OR a.assetType = :type)
 			  AND (
-			        :search IS NULL
-			        OR LOWER(a.symbol) LIKE LOWER(CONCAT('%', :search, '%')) ESCAPE '\\'
-			        OR LOWER(a.name) LIKE LOWER(CONCAT('%', :search, '%')) ESCAPE '\\'
+			        CAST(:search AS String) IS NULL
+			        OR LOWER(a.symbol) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%')) ESCAPE '\\'
+			        OR LOWER(a.name) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%')) ESCAPE '\\'
 			  )
 			""")
 	Page<Asset> findActive(@Param("type") AssetType type, @Param("search") String search, Pageable pageable);

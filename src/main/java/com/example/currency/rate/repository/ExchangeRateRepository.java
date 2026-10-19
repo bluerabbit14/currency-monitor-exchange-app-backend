@@ -22,8 +22,8 @@ public interface ExchangeRateRepository extends JpaRepository<ExchangeRate, UUID
 					JOIN FETCH p.quoteAsset quote
 					WHERE p.status = :status
 					  AND (:type IS NULL OR base.assetType = :type)
-					  AND (:base IS NULL OR UPPER(base.symbol) = UPPER(:base))
-					  AND (:quote IS NULL OR UPPER(quote.symbol) = UPPER(:quote))
+					  AND (CAST(:base AS String) IS NULL OR UPPER(base.symbol) = UPPER(CAST(:base AS String)))
+					  AND (CAST(:quote AS String) IS NULL OR UPPER(quote.symbol) = UPPER(CAST(:quote AS String)))
 					""",
 			countQuery = """
 					SELECT COUNT(r) FROM ExchangeRate r
@@ -32,8 +32,8 @@ public interface ExchangeRateRepository extends JpaRepository<ExchangeRate, UUID
 					JOIN p.quoteAsset quote
 					WHERE p.status = :status
 					  AND (:type IS NULL OR base.assetType = :type)
-					  AND (:base IS NULL OR UPPER(base.symbol) = UPPER(:base))
-					  AND (:quote IS NULL OR UPPER(quote.symbol) = UPPER(:quote))
+					  AND (CAST(:base AS String) IS NULL OR UPPER(base.symbol) = UPPER(CAST(:base AS String)))
+					  AND (CAST(:quote AS String) IS NULL OR UPPER(quote.symbol) = UPPER(CAST(:quote AS String)))
 					"""
 	)
 	Page<ExchangeRate> findCurrentRates(

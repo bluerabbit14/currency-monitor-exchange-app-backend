@@ -55,7 +55,8 @@ public class TokenService {
 				accessToken(user.getId()),
 				refreshToken,
 				TOKEN_TYPE,
-				jwtProperties.getAccessTtlSeconds());
+				jwtProperties.getAccessTtlSeconds(),
+				user.getBaseAssetId());
 	}
 
 	@Transactional
