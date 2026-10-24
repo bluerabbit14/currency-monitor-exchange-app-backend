@@ -67,8 +67,10 @@ public class TokenService {
 	}
 
 	@Transactional
-	public void logout(String refreshToken) {
-		findActive(refreshToken).setRevokedAt(Instant.now());
+	public UUID logout(String refreshToken) {
+		RefreshSession session = findActive(refreshToken);
+		session.setRevokedAt(Instant.now());
+		return session.getUser().getId();
 	}
 
 	public UUID requireUserId(String authorizationHeader) {

@@ -254,6 +254,54 @@ class DeviceServiceTest {
 		verify(userDeviceRepository, never()).save(any());
 	}
 
+	@Test
+	void logoutDeactivatesOnlyTheCallersOwnDevice() {
+		UUID userId = UUID.randomUUID();
+		UserDevice mine = device(userReference(userId), TOKEN, true, Instant.parse("2026-10-12T04:00:00Z"));
+		when(userDeviceRepository.findByDeviceToken(TOKEN)).thenReturn(Optional.of(mine));
+		when(userDeviceRepository.save(mine)).thenReturn(mine);
+
+		deviceService.deactivateByToken(userId, " " + TOKEN + " ");
+
+		assertFalse(mine.isActive());
+		verify(userDeviceRepository).save(mine);
+	}
+
+	@Test
+	void logoutLeavesADeviceAlreadyHandedToAnotherUser() {
+		UUID previousOwner = UUID.randomUUID();
+		UserDevice handedOver = device(userReference(UUID.randomUUID()), TOKEN, true, Instant.parse("2026-10-12T04:00:00Z"));
+		when(userDeviceRepository.findByDeviceToken(TOKEN)).thenReturn(Optional.of(handedOver));
+
+		deviceService.deactivateByToken(previousOwner, TOKEN);
+
+		assertTrue(handedOver.isActive());
+		verify(userDeviceRepository, never()).save(any());
+	}
+
+	@Test
+	void logoutWithoutOrWithUnknownTokenDoesNothing() {
+		UUID userId = UUID.randomUUID();
+		when(userDeviceRepository.findByDeviceToken("unknown")).thenReturn(Optional.empty());
+
+		deviceService.deactivateByToken(userId, null);
+		deviceService.deactivateByToken(userId, "  ");
+		deviceService.deactivateByToken(userId, "unknown");
+
+		verify(userDeviceRepository, never()).save(any());
+	}
+
+	@Test
+	void activeTokensComeOnlyFromTheRecipientsActiveDevices() {
+		UUID userId = UUID.randomUUID();
+		User user = userReference(userId);
+		when(userDeviceRepository.findByUserIdAndActiveTrue(userId)).thenReturn(List.of(
+				device(user, "phone", true, Instant.parse("2026-10-12T04:00:00Z")),
+				device(user, "tablet", true, Instant.parse("2026-10-12T04:00:00Z"))));
+
+		assertEquals(List.of("phone", "tablet"), deviceService.activeTokens(userId));
+	}
+
 	private static String responseGetTokenField(DeviceResponse response) {
 		try {
 			response.getClass().getDeclaredField("fcmToken");

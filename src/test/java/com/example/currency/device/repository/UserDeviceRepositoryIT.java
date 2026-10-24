@@ -122,6 +122,23 @@ class UserDeviceRepositoryIT {
 	}
 
 	@Test
+	void activeLookupReturnsOnlyTheRecipientsActiveDevices() {
+		User owner = userRepository.saveAndFlush(activeUser("active-owner@example.com"));
+		User other = userRepository.saveAndFlush(activeUser("active-other@example.com"));
+		userDeviceRepository.saveAndFlush(device(owner, "owner-phone", "Phone", true));
+		userDeviceRepository.saveAndFlush(device(owner, "owner-tablet", "Tablet", true));
+		userDeviceRepository.saveAndFlush(device(owner, "owner-signed-out", "Old", false));
+		userDeviceRepository.saveAndFlush(device(other, "other-phone", "Phone", true));
+
+		List<String> tokens = userDeviceRepository.findByUserIdAndActiveTrue(owner.getId()).stream()
+				.map(UserDevice::getDeviceToken)
+				.sorted()
+				.toList();
+
+		assertEquals(List.of("owner-phone", "owner-tablet"), tokens);
+	}
+
+	@Test
 	void ownershipLookupScopesByUser() {
 		User owner = userRepository.saveAndFlush(activeUser("owned@example.com"));
 		User other = userRepository.saveAndFlush(activeUser("not-owned@example.com"));

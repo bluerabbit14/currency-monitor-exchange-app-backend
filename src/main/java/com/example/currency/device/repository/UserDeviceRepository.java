@@ -15,6 +15,9 @@ public interface UserDeviceRepository extends JpaRepository<UserDevice, UUID> {
 
 	Optional<UserDevice> findByIdAndUserId(UUID id, UUID userId);
 
+	// Delivery targets: only the recipient's registrations that are still active.
+	List<UserDevice> findByUserIdAndActiveTrue(UUID userId);
+
 	@Query("""
 			SELECT d FROM UserDevice d
 			WHERE d.user.id = :userId

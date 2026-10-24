@@ -65,6 +65,32 @@ public class DeviceService {
 		}
 	}
 
+	/**
+	 * Signs this device out for [userId]: deactivates the registration only if the
+	 * token is still theirs, so a device already handed to another user, or any of
+	 * their other devices, is left alone. Blank or unknown tokens are ignored.
+	 */
+	@Transactional
+	public void deactivateByToken(UUID userId, String fcmToken) {
+		if (fcmToken == null || fcmToken.isBlank()) {
+			return;
+		}
+		userDeviceRepository.findByDeviceToken(fcmToken.trim())
+				.filter(device -> device.isActive() && device.getUser().getId().equals(userId))
+				.ifPresent(device -> {
+					device.setActive(false);
+					userDeviceRepository.save(device);
+				});
+	}
+
+	/** FCM tokens a notification to [userId] may be sent to: their active devices only. */
+	@Transactional(readOnly = true)
+	public List<String> activeTokens(UUID userId) {
+		return userDeviceRepository.findByUserIdAndActiveTrue(userId).stream()
+				.map(UserDevice::getDeviceToken)
+				.toList();
+	}
+
 	private DeviceResponse createDevice(UUID userId, String token, RegisterDeviceRequest request) {
 		UserDevice device = new UserDevice();
 		device.setUser(userRepository.getReferenceById(userId));

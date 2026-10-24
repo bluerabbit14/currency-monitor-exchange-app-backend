@@ -238,9 +238,15 @@ Exchanges a refresh token for a new token pair.
 
 ### POST `/api/v1/auth/logout` — `logout`
 
-Revokes the refresh session.
+Revokes the refresh session. When `fcmToken` is sent, also deactivates that device's registration, but only if it still belongs to the signing-out user (a device already handed to another account, and the user's other devices, are untouched). Both happen in one transaction.
 
-**Request:** `RefreshTokenRequest` (see above)
+**Request – `LogoutRequest`**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `refreshToken` | string | yes | not blank |
+| `fcmToken` | string | no | max 4096; this device's FCM token |
+
 **Response 204:** no body
 **Errors:** `400` validation
 

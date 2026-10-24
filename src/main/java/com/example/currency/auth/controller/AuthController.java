@@ -5,19 +5,24 @@ import com.example.currency.auth.dto.OtpSendRequest;
 import com.example.currency.auth.dto.OtpSendResponse;
 import com.example.currency.auth.dto.OtpVerifyRequest;
 import com.example.currency.auth.dto.OtpVerifyResponse;
+import com.example.currency.auth.dto.LogoutRequest;
 import com.example.currency.auth.dto.RefreshTokenRequest;
 import com.example.currency.auth.service.OtpService;
 import com.example.currency.auth.service.TokenService;
+import com.example.currency.device.service.DeviceService;
 import com.example.currency.web.ApiMessage;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -26,10 +31,12 @@ public class AuthController {
 
 	private final OtpService otpService;
 	private final TokenService tokenService;
+	private final DeviceService deviceService;
 
-	public AuthController(OtpService otpService, TokenService tokenService) {
+	public AuthController(OtpService otpService, TokenService tokenService, DeviceService deviceService) {
 		this.otpService = otpService;
 		this.tokenService = tokenService;
+		this.deviceService = deviceService;
 	}
 
 	@PostMapping("/otp/send")
@@ -56,8 +63,13 @@ public class AuthController {
 	}
 
 	@PostMapping("/logout")
-	public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
-		tokenService.logout(request.refreshToken());
+	@Transactional
+	@Operation(summary = "Sign out this session",
+			description = "Revokes the refresh session. With fcmToken, also deactivates that device's "
+					+ "registration for this user only; their other devices and sessions are untouched.")
+	public ResponseEntity<Void> logout(@Valid @RequestBody LogoutRequest request) {
+		UUID userId = tokenService.logout(request.refreshToken());
+		deviceService.deactivateByToken(userId, request.fcmToken());
 		return ResponseEntity.noContent().build();
 	}
 

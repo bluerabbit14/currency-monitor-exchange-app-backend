@@ -90,6 +90,14 @@ class TokenServiceTest {
 	}
 
 	@Test
+	void logoutReturnsTheSessionsUser() {
+		User user = activeUser();
+		AuthTokenResponse issued = tokenService.issue(user);
+
+		assertEquals(user.getId(), tokenService.logout(issued.refreshToken()));
+	}
+
+	@Test
 	void rejectsUnknownRefreshToken() {
 		assertThrows(InvalidRefreshTokenException.class, () -> tokenService.refresh("missing"));
 	}
