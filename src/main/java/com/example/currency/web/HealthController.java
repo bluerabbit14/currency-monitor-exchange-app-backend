@@ -4,6 +4,7 @@ import com.example.currency.notification.dto.NotificationResponse;
 import com.example.currency.notification.entity.Notification;
 import com.example.currency.notification.enums.DeliveryStatus;
 import com.example.currency.notification.enums.NotificationType;
+import com.example.currency.notification.service.NotificationPayload;
 import com.example.currency.notification.service.NotificationService;
 import com.example.currency.notification.service.PushNotificationService;
 import com.example.currency.notification.service.PushNotificationService.PushResult;
@@ -93,7 +94,8 @@ public class HealthController {
 			@Valid @RequestBody TestNotificationRequest request) {
 		Notification notification = notificationService.createNotification(
 				userId, NotificationType.PRICE_ALERT, request.title(), request.description(), null);
-		PushResult push = pushNotificationService.send(userId, request.title(), request.description());
+		PushResult push = pushNotificationService.send(userId, request.title(), request.description(),
+				NotificationPayload.of(NotificationType.PRICE_ALERT, null, notification.getId()));
 		notification = notificationService.markDelivery(notification,
 				push.sent() > 0 ? DeliveryStatus.SENT : DeliveryStatus.FAILED);
 		return new TestNotificationResponse(NotificationService.toResponse(notification), push);

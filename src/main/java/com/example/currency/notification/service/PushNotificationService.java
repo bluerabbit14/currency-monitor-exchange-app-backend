@@ -5,6 +5,7 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
+import com.google.firebase.messaging.AndroidConfig;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.MessagingErrorCode;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -72,7 +74,7 @@ public class PushNotificationService {
 	}
 
 	/** Sends the push to all of the user's active devices and reports what happened. */
-	public PushResult send(UUID userId, String title, String body) {
+	public PushResult send(UUID userId, String title, String body, Map<String, String> data) {
 		if (!enabled) {
 			return new PushResult(false, 0, 0, List.of("Firebase credentials are missing or invalid; see startup log"));
 		}
@@ -83,6 +85,8 @@ public class PushNotificationService {
 			Message message = Message.builder()
 					.setToken(token)
 					.setNotification(Notification.builder().setTitle(title).setBody(body).build())
+					.putAllData(data)
+					.setAndroidConfig(AndroidConfig.builder().setPriority(AndroidConfig.Priority.HIGH).build())
 					.build();
 			try {
 				FirebaseMessaging.getInstance().send(message);
