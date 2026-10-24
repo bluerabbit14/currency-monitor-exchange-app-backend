@@ -80,6 +80,13 @@
         <version>2.7.2</version>
     </dependency>
 
+    <!-- FCM push notifications -->
+    <dependency>
+        <groupId>com.google.firebase</groupId>
+        <artifactId>firebase-admin</artifactId>
+        <version>9.4.3</version>
+    </dependency>
+
     <!-- Validation -->
     <dependency>
         <groupId>org.springframework.boot</groupId>

@@ -100,12 +100,21 @@ public class NotificationService {
 		return notificationRepository.save(notification);
 	}
 
+	@Transactional
+	public Notification markDelivery(Notification notification, DeliveryStatus status) {
+		notification.setStatus(status);
+		if (status == DeliveryStatus.SENT) {
+			notification.setSentAt(Instant.now());
+		}
+		return notificationRepository.save(notification);
+	}
+
 	private Notification requireOwned(UUID userId, UUID notificationId) {
 		return notificationRepository.findByIdAndUser_Id(notificationId, userId)
 				.orElseThrow(() -> new NotificationNotFoundException(notificationId));
 	}
 
-	static NotificationResponse toResponse(Notification notification) {
+	public static NotificationResponse toResponse(Notification notification) {
 		UUID referenceId = notification.getAlert() != null ? notification.getAlert().getId() : null;
 		return new NotificationResponse(
 				notification.getId(),
